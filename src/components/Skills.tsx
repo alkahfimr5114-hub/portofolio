@@ -312,7 +312,7 @@ export const Skills: React.FC<SkillsProps> = ({
 
             {/* Grid Kartu Sertifikasi */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {certificates.map((cert) => (
+              {(certificates || []).map((cert) => (
                 <div
                   key={cert.id}
                   className="group relative rounded-3xl glass-futuristic-card p-6 border border-white/15 hover:border-sky-400/60 transition-all duration-300 flex flex-col justify-between shadow-xl hover:-translate-y-1.5"
@@ -340,6 +340,11 @@ export const Skills: React.FC<SkillsProps> = ({
                         <img
                           src={cert.imageUrl}
                           alt={cert.title}
+                          onError={(e) => {
+                            if (e.currentTarget.src !== 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop') {
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop';
+                            }
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                         />

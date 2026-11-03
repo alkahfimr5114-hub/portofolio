@@ -69,7 +69,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
 
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: [...experience.galleryPhotos, newPhoto],
+      galleryPhotos: [...(experience.galleryPhotos || []), newPhoto],
     };
 
     onUpdateExperience(updated);
@@ -99,7 +99,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         };
         const updated: ExperienceItem = {
           ...experience,
-          galleryPhotos: [...experience.galleryPhotos, newPhoto],
+          galleryPhotos: [...(experience.galleryPhotos || []), newPhoto],
         };
         onUpdateExperience(updated);
         setUploadStatus(result.isCloud ? 'Berhasil tersimpan di Cloud Storage!' : 'Tersimpan lokal.');
@@ -122,7 +122,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   const handleDeletePhoto = (photoId: string) => {
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: experience.galleryPhotos.filter((p) => p.id !== photoId),
+      galleryPhotos: (experience.galleryPhotos || []).filter((p) => p.id !== photoId),
     };
     onUpdateExperience(updated);
   };
@@ -134,7 +134,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
 
     const updated: ExperienceItem = {
       ...experience,
-      dutiesAndAchievements: [...experience.dutiesAndAchievements, newDutyText.trim()],
+      dutiesAndAchievements: [...(experience.dutiesAndAchievements || []), newDutyText.trim()],
     };
     onUpdateExperience(updated);
     setNewDutyText('');
@@ -144,13 +144,13 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   const handleDeleteDuty = (index: number) => {
     const updated: ExperienceItem = {
       ...experience,
-      dutiesAndAchievements: experience.dutiesAndAchievements.filter((_, i) => i !== index),
+      dutiesAndAchievements: (experience.dutiesAndAchievements || []).filter((_, i) => i !== index),
     };
     onUpdateExperience(updated);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 lg:p-8 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 lg:p-8 overflow-y-auto">
       {/* Dark frosted backdrop */}
       <div 
         className="fixed inset-0 bg-black/90 backdrop-blur-xl transition-opacity" 
@@ -343,7 +343,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           </div>
 
           <div className="space-y-3">
-            {experience.dutiesAndAchievements.map((duty, idx) => (
+            {(experience.dutiesAndAchievements || []).map((duty, idx) => (
               <div key={idx} className="flex items-start justify-between gap-3 text-xs sm:text-sm text-slate-200 leading-relaxed group">
                 <div className="flex items-start gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-sky-400 mt-2 shrink-0 shadow-[0_0_6px_#00d4ff]" aria-hidden="true" />
@@ -438,7 +438,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-mono text-slate-400 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                  {experience.galleryPhotos.length} Foto Dokumentasi
+                  {(experience.galleryPhotos || []).length} Foto Dokumentasi
                 </span>
               </div>
             )}
@@ -486,9 +486,9 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
 
           {/* Grid Foto Dokumentasi dengan Proposi Utuh (object-contain + neat caption label) */}
-          {experience.galleryPhotos.length > 0 ? (
+          {(experience.galleryPhotos || []).length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              {experience.galleryPhotos.map((photo, pIdx) => (
+              {(experience.galleryPhotos || []).map((photo, pIdx) => (
                 <div
                   key={photo.id}
                   className="group relative rounded-2xl overflow-hidden border border-white/15 hover:border-sky-400/70 bg-gradient-to-b from-slate-900/90 to-black/95 p-3 flex flex-col justify-between transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,112,243,0.3)] cursor-pointer"
@@ -534,7 +534,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                           type="text"
                           value={photo.caption}
                           onChange={(e) => {
-                            const updatedPhotos = experience.galleryPhotos.map((p) =>
+                            const updatedPhotos = (experience.galleryPhotos || []).map((p) =>
                               p.id === photo.id ? { ...p, caption: e.target.value } : p
                             );
                             onUpdateExperience({ ...experience, galleryPhotos: updatedPhotos });
@@ -569,7 +569,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               <span>Standar Regulasi Kepatuhan:</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {experience.regulatoryStandards.map((std, i) => (
+              {(experience.regulatoryStandards || []).map((std, i) => (
                 <span key={i} className="px-2.5 py-1 rounded-md text-xs font-mono text-slate-200 bg-slate-900 border border-slate-700">
                   {std}
                 </span>
@@ -583,7 +583,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               <span>Kompetensi Teknis Terlatih:</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {experience.competencies.map((comp, i) => (
+              {(experience.competencies || []).map((comp, i) => (
                 <span key={i} className="px-2.5 py-0.5 rounded text-xs font-mono text-slate-300 bg-black/80 border border-slate-800">
                   {comp}
                 </span>
@@ -591,6 +591,18 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Metrik Indikator Kinerja Utama (Safe) */}
+        {(experience.metrics || []).length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+            {(experience.metrics || []).map((m, idx) => (
+              <div key={idx} className="p-3 rounded-xl bg-slate-900/60 border border-white/10 text-center">
+                <div className="text-xs font-mono text-slate-400">{m.label}</div>
+                <div className="text-sm font-bold text-sky-300 font-mono mt-0.5">{m.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="pt-6 border-t border-white/15 flex items-center justify-between">
@@ -608,19 +620,19 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       </div>
 
       {/* Lightbox Zoom Foto */}
-      {activePhotoIndex !== null && experience.galleryPhotos[activePhotoIndex] && (
+      {activePhotoIndex !== null && (experience.galleryPhotos || [])[activePhotoIndex] && (
         <div 
-          className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center p-4"
           onClick={() => setActivePhotoIndex(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
             <img
-              src={experience.galleryPhotos[activePhotoIndex].url}
-              alt={experience.galleryPhotos[activePhotoIndex].caption}
+              src={(experience.galleryPhotos || [])[activePhotoIndex]?.url}
+              alt={(experience.galleryPhotos || [])[activePhotoIndex]?.caption}
               className="max-h-[80vh] w-auto rounded-xl object-contain shadow-2xl border border-sky-400/40"
             />
             <div className="mt-3 text-sm font-mono text-white text-center bg-black/70 px-4 py-2 rounded-full border border-white/20">
-              {experience.galleryPhotos[activePhotoIndex].caption}
+              {(experience.galleryPhotos || [])[activePhotoIndex]?.caption}
             </div>
             <button
               onClick={() => setActivePhotoIndex(null)}

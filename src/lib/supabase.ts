@@ -202,24 +202,67 @@ export interface StorageUploadResult {
 }
 
 /**
+ * Compresses an image file using an HTML5 Canvas to max width 800px, JPEG quality 0.7.
+ * Returns a lightweight, high-performance base64 data URL.
+ */
+export function compressImageWithCanvas(
+  file: File,
+  maxWidth: number = 800,
+  quality: number = 0.7
+): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve((event.target?.result as string) || '');
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        resolve((event.target?.result as string) || '');
+      };
+      img.src = (event.target?.result as string) || '';
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Upload an image file to Supabase Storage bucket 'portfolio-images'.
+ * Uses format: `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
  * Automatically retrieves the public URL for permanent cloud access.
- * If cloud upload fails or bucket is unavailable, safely falls back to DataURL
- * so user edits are preserved without interruption.
+ * If cloud upload fails or bucket is unavailable, safely falls back to Canvas compression (max 800px, quality 0.7)
+ * so user edits are preserved without interruption and save cleanly to Supabase portfolio_settings.
  */
 export async function uploadImageToSupabaseStorage(
   file: File,
   folder: string = 'general'
 ): Promise<StorageUploadResult> {
+  const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+  const filePath = `${folder}/${Date.now()}-${cleanName}`;
+
   if (supabase) {
     try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const cleanBaseName = file.name
-        .replace(/\.[^/.]+$/, '')
-        .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .slice(0, 30);
-      const filePath = `${folder}/${Date.now()}_${cleanBaseName}.${fileExt}`;
-
       const { data, error } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(filePath, file, {
@@ -229,13 +272,13 @@ export async function uploadImageToSupabaseStorage(
         });
 
       if (!error && data?.path) {
-        const { data: publicData } = supabase.storage
+        const publicUrl = supabase.storage
           .from(BUCKET_NAME)
-          .getPublicUrl(data.path);
+          .getPublicUrl(filePath).data.publicUrl;
 
-        if (publicData?.publicUrl) {
+        if (publicUrl) {
           return {
-            url: publicData.publicUrl,
+            url: publicUrl,
             isCloud: true,
           };
         }
@@ -247,25 +290,26 @@ export async function uploadImageToSupabaseStorage(
     }
   }
 
-  // Fallback to FileReader Base64 DataURL
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      resolve({
-        url: (e.target?.result as string) || '',
-        isCloud: false,
-        error: supabase
-          ? 'Bucket "portfolio-images" belum siap atau akses publik belum aktif. Foto tersimpan ke penyimpanan data.'
-          : undefined,
-      });
+  // Fallback to Canvas compression (max 800px, quality 0.7 JPEG base64 DataURL)
+  try {
+    const compressedUrl = await compressImageWithCanvas(file, 800, 0.7);
+    return {
+      url: compressedUrl,
+      isCloud: false,
+      error: 'Foto dikompresi & disimpan ke database portfolio_settings (Storage bucket belum aktif).',
     };
-    reader.onerror = () => {
-      resolve({
-        url: '',
-        isCloud: false,
-        error: 'Gagal memproses file foto.',
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+  } catch (canvasErr) {
+    console.warn('[Canvas Compression] Fallback to raw DataURL:', canvasErr);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve({
+          url: (e.target?.result as string) || '',
+          isCloud: false,
+        });
+      };
+      reader.onerror = () => resolve({ url: '', isCloud: false });
+      reader.readAsDataURL(file);
+    });
+  }
 }

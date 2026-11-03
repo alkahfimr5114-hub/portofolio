@@ -400,8 +400,13 @@ export const Hero: React.FC<HeroProps> = ({
 
                   {/* Portrait Photo */}
                   <img
-                    src={profilePhoto}
+                    src={profilePhoto || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop'}
                     alt="Foto Profil apt. Andi Al Kahfi Akihito MR, S.Farm"
+                    onError={(e) => {
+                      if (e.currentTarget.src !== 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop') {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop';
+                      }
+                    }}
                     className="w-full h-full object-cover object-[center_12%] sm:object-[center_10%] filter contrast-[1.06] brightness-[1.02] transform group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Lock, Unlock, X, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
+import { ShieldCheck, Lock, Unlock, X, AlertCircle, CheckCircle2, KeyRound, RotateCcw } from 'lucide-react';
 
 interface AdminPinModalProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface AdminPinModalProps {
   isEditMode: boolean;
   onUnlock: () => void;
   onLock: () => void;
+  onResetCache?: () => void;
 }
 
 const CORRECT_PIN = '261026';
@@ -17,6 +18,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
   isEditMode,
   onUnlock,
   onLock,
+  onResetCache,
 }) => {
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +151,22 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
               >
                 Tetap Lanjutkan Edit
               </button>
+
+              {onResetCache && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Reset semua data portofolio ke default awal dan bersihkan cache?')) {
+                      onResetCache();
+                      onClose();
+                    }
+                  }}
+                  className="w-full py-2 rounded-full border border-amber-500/50 hover:bg-amber-500/20 text-amber-300 text-xs font-mono transition-colors cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Data ke Default & Bersihkan Cache</span>
+                </button>
+              )}
             </div>
           </div>
         ) : (

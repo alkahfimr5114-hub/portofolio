@@ -1,6 +1,7 @@
 import { ExperienceItem, EducationItem, SkillCategoryItem, CertificateCardItem, PublicationItem } from '../types/pharmacy';
 
-export const PROFILE_PHOTO = '/assets/aistudio/KANAYA-07926_b90d1082.jpeg';
+// URL placeholder foto profil HTTPS publik yang valid (100% tampil di semua environment & build Vercel)
+export const PROFILE_PHOTO = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop';
 
 export const PERSONAL_INFO = {
   name: 'apt. Andi Al Kahfi Akihito MR, S.Farm',
@@ -66,10 +67,10 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Hospital Pharmacy',
     shortSummary: 'Pelayanan farmasi klinis di Rawat Inap, Rawat Jalan, IGD, OK, visite/PTO terkolaborasi, penataan FEFO/FIFO, dan sterilisasi CSSD.',
     fullOverview: 'Melaksanakan praktik kefarmasian komprehensif di rumah sakit tipe B. Bertanggung jawab atas pengelolaan obat terintegrasi, skrining resep, pemantauan terapi obat bersama dokter & perawat di ruang rawat inap, pengendalian obat High Alert, serta prosedur dekontaminasi dan sterilisasi di CSSD.',
-    image: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg',
+    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'rsud-1', url: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg', caption: 'Depo Farmasi Rawat Inap & Sistem Dispensing Resep RSUD' },
-      { id: 'rsud-2', url: '/src/assets/images/pharmacy_community_dispensing_1793692158854.jpg', caption: 'Konseling Pasien Rawat Jalan & Pelayanan Informasi Obat (PIO)' }
+      { id: 'rsud-1', url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop', caption: 'Depo Farmasi Rawat Inap & Sistem Dispensing Resep RSUD' },
+      { id: 'rsud-2', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?q=80&w=1200&auto=format&fit=crop', caption: 'Konseling Pasien Rawat Jalan & Pelayanan Informasi Obat (PIO)' }
     ],
     dutiesAndAchievements: [
       'Menjamin ketersediaan, penyimpanan, dan pengelolaan sediaan farmasi/perbekalan sesuai standar RS.',
@@ -99,10 +100,10 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Cosmetics Industry',
     shortSummary: 'Penyusunan Dokumen Informasi Produk (DIP) maklon OEM/ODM, verifikasi QC/QA bahan baku & kemas, IPC, dan uji fisik-kimia.',
     fullOverview: 'Berperan aktif dalam divisi QA/QC pada industri manufaktur kosmetik maklon. Memastikan kepatuhan terhadap regulasi CPKB BPOM, validasi dokumen legalitas produk (DIP), serta pengujian parameter kualitas fisik-kimia di laboratorium industri.',
-    image: '/src/assets/images/cosmetics_qc_lab_1793688680698.jpg',
+    image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'urban-1', url: '/src/assets/images/cosmetics_qc_lab_1793688680698.jpg', caption: 'Laboratorium Pengujian Mutu Fisik-Kimia & Instrumen Analisis (pH/TDS)' },
-      { id: 'urban-2', url: '/src/assets/images/pharma_distribution_coldchain_1793688681016.jpg', caption: 'Gudang Bahan Baku & Karantina Kemas Sesuai Standar CPKB' }
+      { id: 'urban-1', url: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1200&auto=format&fit=crop', caption: 'Laboratorium Pengujian Mutu Fisik-Kimia & Instrumen Analisis (pH/TDS)' },
+      { id: 'urban-2', url: 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=1200&auto=format&fit=crop', caption: 'Gudang Bahan Baku & Karantina Kemas Sesuai Standar CPKB' }
     ],
     dutiesAndAchievements: [
       'Menyusun dan menyiapkan Dokumen Informasi Produk (DIP) untuk produk maklon (OEM/ODM) sesuai standar regulasi BPOM/CPKB.',
@@ -131,9 +132,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Pharmaceutical Distribution',
     shortSummary: 'Penerapan standar CDOB & CDAKB, verifikasi faktur distribusi, pengelolaan Cold Chain Products, dan obat khusus Psikotropika/OOT.',
     fullOverview: 'Melaksanakan penjaminan mutu pada Pedagang Besar Farmasi (PBF) cabang Gowa. Menjaga integritas rantai distribusi obat dari penerimaan, penyimpanan chiller/freezer dengan pemantauan suhu real-time, hingga pengiriman dengan armada tervalidasi.',
-    image: '/src/assets/images/pharma_distribution_coldchain_1793688681016.jpg',
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'ams-1', url: '/src/assets/images/pharma_distribution_coldchain_1793688681016.jpg', caption: 'Area Penyimpanan Gudang PBF & Fasilitas Cold Chain Berstandar CDOB' }
+      { id: 'ams-1', url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop', caption: 'Area Penyimpanan Gudang PBF & Fasilitas Cold Chain Berstandar CDOB' }
     ],
     dutiesAndAchievements: [
       'Penerapan standar CDOB & CDAKB pada operasional distribusi perbekalan farmasi & alat kesehatan.',
@@ -162,9 +163,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Community Pharmacy',
     shortSummary: 'Pelayanan resep dokter, swamedikasi rasional, PIO dan konseling 30+ pasien/hari, perencanaan pengadaan, dan stok opnam.',
     fullOverview: 'Menjalankan fungsi Apoteker Pengelola Apotek di jaringan Kimia Farma. Memberikan edukasi swamedikasi rasional kepada masyarakat, pelayanan resep racikan, pengelolaan stok obat preventif dari expired, serta pengawasan administrasi pelaporan.',
-    image: '/src/assets/images/pharmacy_community_dispensing_1793692158854.jpg',
+    image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'kf-1', url: '/src/assets/images/pharmacy_community_dispensing_1793692158854.jpg', caption: 'Area Dispensing Resep & Meja Konseling Edukasi Pasien Komunitas' }
+      { id: 'kf-1', url: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?q=80&w=1200&auto=format&fit=crop', caption: 'Area Dispensing Resep & Meja Konseling Edukasi Pasien Komunitas' }
     ],
     dutiesAndAchievements: [
       'Melayani resep, swamedikasi, PIO, dan konseling obat kepada 30+ pasien per hari.',
@@ -191,9 +192,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Public Health Care',
     shortSummary: 'Pelayanan resep & konseling 30+ pasien/hari, pengelolaan inventaris obat program kesehatan nasional, dan program Cek Kesehatan SD.',
     fullOverview: 'Memberikan pelayanan farmasi primer di fasilitas kesehatan masyarakat. Mengelola alokasi obat program nasional (TB, Imunisasi, Gizi), skrining resep, serta turun langsung dalam penyuluhan kesehatan dan skrining di sekolah dasar binaan puskesmas.',
-    image: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg',
+    image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'pusk-1', url: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg', caption: 'Ruang Farmasi Puskesmas & Pendistribusian Obat Program Pemerintah' }
+      { id: 'pusk-1', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?q=80&w=1200&auto=format&fit=crop', caption: 'Ruang Farmasi Puskesmas & Pendistribusian Obat Program Pemerintah' }
     ],
     dutiesAndAchievements: [
       'Pelayanan resep, PIO, dan konseling penggunaan obat aman bagi 30+ pasien per hari.',
@@ -220,9 +221,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Specialized Respiratory Center',
     shortSummary: 'PIO khusus pasien program paru 10+/hari, pengelolaan administrasi dokumen sediaan farmasi, dan penerimaan stok.',
     fullOverview: 'Fokus pada penanganan farmakoterapi penyakit tuberkulosis (OAT), asma, dan PPOK. Memberikan konseling mendalam terkait kepatuhan minum obat jangka panjang guna mencegah terjadinya resistensi obat (MDR-TB).',
-    image: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg',
+    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'bbkpm-1', url: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg', caption: 'Pemberian Informasi Obat Pasien Program Tuberkulosis & Respirasi' }
+      { id: 'bbkpm-1', url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=1200&auto=format&fit=crop', caption: 'Pemberian Informasi Obat Pasien Program Tuberkulosis & Respirasi' }
     ],
     dutiesAndAchievements: [
       'Pemberian Pelayanan Informasi Obat (PIO) mendalam kepada 10+ pasien program khusus paru per hari mengenai kepatuhan terapi jangka panjang.',
@@ -250,9 +251,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Specialized Eye Hospital',
     shortSummary: 'Swamedikasi 10+ pasien obat khusus, pelayanan resep oftalmologi, penyiapan obat sediaan steril mata, dan administrasi farmasi.',
     fullOverview: 'Melaksanakan magang mandiri di Rumah Sakit Mata Kemenkes Makassar. Fokus pada penanganan dan dispensing sediaan obat mata steril (tetes/salep mata), edukasi swamedikasi bagi 10+ pasien obat khusus per hari, pelayanan resep oftalmologi, serta pengelolaan administrasi farmasi terintegrasi.',
-    image: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg',
+    image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'rsmata-1', url: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg', caption: 'Dispensing Sediaan Steril Oftalmik & Pelayanan Resep Khusus Mata' }
+      { id: 'rsmata-1', url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=1200&auto=format&fit=crop', caption: 'Dispensing Sediaan Steril Oftalmik & Pelayanan Resep Khusus Mata' }
     ],
     dutiesAndAchievements: [
       'Swamedikasi 10+ pasien per hari terkait penggunaan obat khusus oftalmik dan penanganan keluhan mata ringan.',
@@ -281,9 +282,9 @@ export const PRACTICAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'General Hospital',
     shortSummary: 'Pelayanan resep, penyiapan obat, administrasi, serta rotasi di apotek rawat jalan, rawat inap, dan depo umum.',
     fullOverview: 'Menjalani rotasi pelayanan kefarmasian di RS Stella Maris Makassar. Mengasah ketangkasan dispensing obat, verifikasi resep dokter, pengarsipan administrasi, serta rotasi multi-unit di Apotek Rawat Jalan, Rawat Inap, dan Depo Umum dengan ritme kerja dinamis.',
-    image: '/src/assets/images/pharmacy_community_dispensing_1793692158854.jpg',
+    image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'stellamaris-1', url: '/src/assets/images/pharmacy_community_dispensing_1793692158854.jpg', caption: 'Rotasi Depo Farmasi Rawat Jalan & Penyiapan Obat Pasien RS Stella Maris' }
+      { id: 'stellamaris-1', url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop', caption: 'Rotasi Depo Farmasi Rawat Jalan & Penyiapan Obat Pasien RS Stella Maris' }
     ],
     dutiesAndAchievements: [
       'Pelayanan resep dokter dan penyiapan obat dengan prinsip 5 benar (pasien, obat, dosis, rute, waktu pemberian).',
@@ -315,10 +316,10 @@ export const ORGANIZATIONAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Academic & Laboratory',
     shortSummary: 'Membimbing 200+ mahasiswa mikrobiologi dasar, mengelola instrumen laboratorium (autoklaf, LAF), penanggung jawab praktikum susulan, serta tim penilai OSCE.',
     fullOverview: 'Dipercaya menjadi asisten dosen selama 3 semester. Bertanggung jawab atas standardisasi teknik aseptis mahasiswa, kalibrasi instrumen laboratorium, perumusan rubrik penilaian praktikum, serta bertindak sebagai penguji mandiri pada ujian OSCE laboratorium.',
-    image: '/src/assets/images/pharmacy_microbiology_culture_1793692158896.jpg',
+    image: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'lab-1', url: '/src/assets/images/pharmacy_microbiology_culture_1793692158896.jpg', caption: 'Pengujian Aktivitas Antibakteri & Pembiakan Kultur Bakteri di LAF' },
-      { id: 'lab-2', url: '/src/assets/images/cosmetics_qc_lab_1793688680698.jpg', caption: 'Pemeliharaan Instrumen Autoklaf & Kalibrasi Peralatan Sterilisasi' }
+      { id: 'lab-1', url: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=1200&auto=format&fit=crop', caption: 'Pengujian Aktivitas Antibakteri & Pembiakan Kultur Bakteri di LAF' },
+      { id: 'lab-2', url: 'https://images.unsplash.com/photo-1582719471384-894fbb16e074?q=80&w=1200&auto=format&fit=crop', caption: 'Pemeliharaan Instrumen Autoklaf & Kalibrasi Peralatan Sterilisasi' }
     ],
     dutiesAndAchievements: [
       'Membimbing 200+ mahasiswa mikrobiologi dasar dan mikrobiologi terapan mengenai teknik aseptis dan inokulasi.',
@@ -346,9 +347,9 @@ export const ORGANIZATIONAL_EXPERIENCES: ExperienceItem[] = [
     categoryLabel: 'Student Organization',
     shortSummary: 'Penanggung jawab kegiatan Studi Banding bersama BEM KEMAFAR UNHAS serta koordinator komunikasi eksternal.',
     fullOverview: 'Memimpin koordinasi diplomasi dan kolaborasi antarkampus farmasi di Makassar. Menjadi Person in Charge (PIC) kegiatan Studi Banding bersama BEM KEMAFAR UNHAS guna pertukaran keilmuan dan program kemahasiswaan.',
-    image: '/src/assets/images/pharmacist_portrait_1793688651919.jpg',
+    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1200&auto=format&fit=crop',
     galleryPhotos: [
-      { id: 'bem-1', url: '/src/assets/images/pharmacist_portrait_1793688651919.jpg', caption: 'Dokumentasi Kepengurusan & Pertemuan Koordinasi Mahasiswa Farmasi' }
+      { id: 'bem-1', url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1200&auto=format&fit=crop', caption: 'Dokumentasi Kepengurusan & Pertemuan Koordinasi Mahasiswa Farmasi' }
     ],
     dutiesAndAchievements: [
       'Penanggung jawab kegiatan Studi Banding bersama BEM KEMAFAR UNHAS.',
@@ -406,7 +407,7 @@ export const INITIAL_CERTIFICATES: CertificateCardItem[] = [
     issuer: 'Konsil Tenaga Kesehatan Indonesia (KTKI) / Kemenkes RI',
     date: '2026 - Sekarang',
     description: 'Surat Tanda Registrasi resmi Apoteker berlisensi untuk praktik kefarmasian nasional.',
-    imageUrl: '/src/assets/images/pharmacist_portrait_1793688651919.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop',
     certificateUrl: 'https://ktki.kemkes.go.id'
   },
   {
@@ -415,7 +416,7 @@ export const INITIAL_CERTIFICATES: CertificateCardItem[] = [
     issuer: 'Panitia Nasional Uji Kompetensi Apoteker Indonesia',
     date: '2026',
     description: 'Sertifikat kelulusan Ujian Kompetensi Apoteker Indonesia dengan predikat memuaskan.',
-    imageUrl: '/src/assets/images/pharmacy_hospital_cssd_1793688680542.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1200&auto=format&fit=crop',
     certificateUrl: 'https://ukai.or.id'
   },
   {
@@ -424,7 +425,7 @@ export const INITIAL_CERTIFICATES: CertificateCardItem[] = [
     issuer: 'Pusat Bahasa Universitas Hasanuddin',
     date: '2025',
     description: 'Sertifikasi kemahiran bahasa Inggris standar akademik dan profesional kefarmasian.',
-    imageUrl: '/src/assets/images/pharmacy_microbiology_culture_1793692158896.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=1200&auto=format&fit=crop',
     certificateUrl: 'https://unhas.ac.id'
   }
 ];

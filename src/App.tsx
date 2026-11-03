@@ -30,6 +30,69 @@ import {
   FullPortfolioData 
 } from './lib/supabase';
 
+const DEFAULT_FALLBACK_IMAGES: Record<string, string> = {
+  hospital: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop',
+  industry: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1200&auto=format&fit=crop',
+  distribution: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=1200&auto=format&fit=crop',
+  community: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?q=80&w=1200&auto=format&fit=crop',
+  organization: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=1200&auto=format&fit=crop',
+  default: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?q=80&w=1200&auto=format&fit=crop',
+};
+
+function sanitizeExperienceItem(item: any): ExperienceItem {
+  if (!item || typeof item !== 'object') {
+    return PRACTICAL_EXPERIENCES[0];
+  }
+  const category = item.category || 'hospital';
+  const fallbackImg = DEFAULT_FALLBACK_IMAGES[category] || DEFAULT_FALLBACK_IMAGES.default;
+
+  let image = item.image;
+  if (!image || typeof image !== 'string' || image.startsWith('/src/assets/')) {
+    image = fallbackImg;
+  }
+
+  const rawPhotos = Array.isArray(item.galleryPhotos) ? item.galleryPhotos : [];
+  const galleryPhotos = rawPhotos.map((p: any, idx: number) => {
+    let url = p?.url || '';
+    if (!url || typeof url !== 'string' || url.startsWith('/src/assets/')) {
+      url = fallbackImg;
+    }
+    return {
+      id: p?.id || `photo-${idx}-${Date.now()}`,
+      url,
+      caption: p?.caption || 'Dokumentasi Praktik Kefarmasian',
+    };
+  });
+
+  return {
+    ...item,
+    image,
+    galleryPhotos,
+    dutiesAndAchievements: Array.isArray(item.dutiesAndAchievements) ? item.dutiesAndAchievements : [],
+    regulatoryStandards: Array.isArray(item.regulatoryStandards) ? item.regulatoryStandards : [],
+    competencies: Array.isArray(item.competencies) ? item.competencies : [],
+    metrics: Array.isArray(item.metrics) ? item.metrics : [],
+  };
+}
+
+function sanitizeCertificate(cert: any): CertificateCardItem {
+  if (!cert || typeof cert !== 'object') {
+    return INITIAL_CERTIFICATES[0];
+  }
+  let imageUrl = cert.imageUrl;
+  if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.startsWith('/src/assets/')) {
+    imageUrl = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop';
+  }
+  return { ...cert, imageUrl };
+}
+
+function sanitizeProfilePhoto(photo: any): string {
+  if (!photo || typeof photo !== 'string' || photo.startsWith('/src/assets/')) {
+    return PROFILE_PHOTO;
+  }
+  return photo;
+}
+
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
   const [selectedExperience, setSelectedExperience] = useState<ExperienceItem | null>(null);
@@ -46,7 +109,7 @@ export default function App() {
 
   // 1. Profile Photo
   const [profilePhoto, setProfilePhoto] = useState<string>(() => {
-    return localStorage.getItem('alkahfi_profile_photo') || PROFILE_PHOTO;
+    return sanitizeProfilePhoto(localStorage.getItem('alkahfi_profile_photo')) || PROFILE_PHOTO;
   });
 
   // 2. Personal Info (Updated name to 'apt. Andi Al Kahfi Akihito MR, S.Farm' & cleaned terms)
@@ -115,7 +178,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.some((item: ExperienceItem) => item.id === 'rs-mata-makassar')) {
-          return parsed.map((item: ExperienceItem) => ({
+          return parsed.map(sanitizeExperienceItem).map((item: ExperienceItem) => ({
             ...item,
             fullOverview: item.fullOverview?.replace(/dan Regulatory Affairs\s*/gi, '') || item.fullOverview,
           }));
@@ -124,7 +187,7 @@ export default function App() {
         console.error(e);
       }
     }
-    return PRACTICAL_EXPERIENCES;
+    return PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem);
   });
 
   // 5. Organization Experiences (Sanitizing 'UMI' to full 'Universitas Muslim Indonesia')
@@ -134,7 +197,7 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((item: ExperienceItem) => ({
+          return parsed.map(sanitizeExperienceItem).map((item: ExperienceItem) => ({
             ...item,
             institution: item.institution?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.institution,
             badgeLabel: item.badgeLabel?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.badgeLabel,
@@ -146,7 +209,7 @@ export default function App() {
         console.error(e);
       }
     }
-    return ORGANIZATIONAL_EXPERIENCES;
+    return ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem);
   });
 
   // 6. Skill Groups (Tools, Lab, Software)
@@ -169,12 +232,14 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(sanitizeCertificate);
+        }
       } catch (e) {
         console.error(e);
       }
     }
-    return INITIAL_CERTIFICATES;
+    return INITIAL_CERTIFICATES.map(sanitizeCertificate);
   });
 
   // 7. Scientific Publication
@@ -205,12 +270,12 @@ export default function App() {
         const cloudData = await fetchPortfolioSettings();
         if (cloudData && isMounted) {
           if (cloudData.personalInfo) setPersonalInfo(cloudData.personalInfo);
-          if (cloudData.profilePhoto) setProfilePhoto(cloudData.profilePhoto);
+          if (cloudData.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(cloudData.profilePhoto));
           if (cloudData.educationList) setEducationList(cloudData.educationList);
-          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences);
-          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences);
+          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(sanitizeExperienceItem));
+          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(sanitizeExperienceItem));
           if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
-          if (cloudData.certificates) setCertificates(cloudData.certificates);
+          if (cloudData.certificates) setCertificates(cloudData.certificates.map(sanitizeCertificate));
           if (cloudData.publication) setPublication(cloudData.publication);
           setCloudSyncStatus('synced');
         } else {
@@ -228,12 +293,12 @@ export default function App() {
     const unsubscribe = subscribeToPortfolioChanges((updated) => {
       if (!isMounted) return;
       if (updated.personalInfo) setPersonalInfo(updated.personalInfo);
-      if (updated.profilePhoto) setProfilePhoto(updated.profilePhoto);
+      if (updated.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(updated.profilePhoto));
       if (updated.educationList) setEducationList(updated.educationList);
-      if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences);
-      if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences);
+      if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences.map(sanitizeExperienceItem));
+      if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences.map(sanitizeExperienceItem));
       if (updated.skillGroups) setSkillGroups(updated.skillGroups);
-      if (updated.certificates) setCertificates(updated.certificates);
+      if (updated.certificates) setCertificates(updated.certificates.map(sanitizeCertificate));
       if (updated.publication) setPublication(updated.publication);
       setCloudSyncStatus('synced');
     });
@@ -518,6 +583,38 @@ export default function App() {
     localStorage.setItem('alkahfi_certificates', JSON.stringify(updated));
   };
 
+  // Reset cache & restore default data
+  const handleResetCache = () => {
+    localStorage.removeItem('alkahfi_personal_info');
+    localStorage.removeItem('alkahfi_profile_photo');
+    localStorage.removeItem('alkahfi_education');
+    localStorage.removeItem('alkahfi_practical_exp_v2');
+    localStorage.removeItem('alkahfi_org_exp');
+    localStorage.removeItem('alkahfi_skills');
+    localStorage.removeItem('alkahfi_certificates');
+    localStorage.removeItem('alkahfi_publication');
+
+    setPersonalInfo(PERSONAL_INFO);
+    setProfilePhoto(PROFILE_PHOTO);
+    setEducationList(EDUCATION_DATA);
+    setPracticalExperiences(PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem));
+    setOrganizationExperiences(ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem));
+    setSkillGroups(SKILL_GROUPS);
+    setCertificates(INITIAL_CERTIFICATES.map(sanitizeCertificate));
+    setPublication(SCIENTIFIC_PUBLICATION);
+
+    savePortfolioSettings({
+      personalInfo: PERSONAL_INFO,
+      profilePhoto: PROFILE_PHOTO,
+      educationList: EDUCATION_DATA,
+      practicalExperiences: PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem),
+      organizationExperiences: ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem),
+      skillGroups: SKILL_GROUPS,
+      certificates: INITIAL_CERTIFICATES.map(sanitizeCertificate),
+      publication: SCIENTIFIC_PUBLICATION,
+    });
+  };
+
   // Scroll detection for active navbar section
   useEffect(() => {
     const handleScroll = () => {
@@ -720,6 +817,7 @@ export default function App() {
           setHasEntered(true);
         }}
         onLock={() => setIsEditMode(false)}
+        onResetCache={handleResetCache}
       />
 
       {/* Floating Back to Top Pill Button */}

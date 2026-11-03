@@ -26,16 +26,16 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<ExperienceCategory>('all');
 
   const filterTabs: { id: ExperienceCategory; label: string }[] = [
-    { id: 'all', label: `Semua PKPA (${practicalExperiences.length})` },
-    { id: 'hospital', label: `Rumah Sakit & Klinis (${practicalExperiences.filter((item) => item.category === 'hospital').length})` },
-    { id: 'industry', label: `Industri Kosmetik CPKB (${practicalExperiences.filter((item) => item.category === 'industry').length})` },
-    { id: 'distribution', label: `Distribusi CDOB (${practicalExperiences.filter((item) => item.category === 'distribution').length})` },
-    { id: 'community', label: `Komunitas & Puskesmas (${practicalExperiences.filter((item) => item.category === 'community').length})` },
+    { id: 'all', label: `Semua PKPA (${(practicalExperiences || []).length})` },
+    { id: 'hospital', label: `Rumah Sakit & Klinis (${(practicalExperiences || []).filter((item) => item.category === 'hospital').length})` },
+    { id: 'industry', label: `Industri Kosmetik CPKB (${(practicalExperiences || []).filter((item) => item.category === 'industry').length})` },
+    { id: 'distribution', label: `Distribusi CDOB (${(practicalExperiences || []).filter((item) => item.category === 'distribution').length})` },
+    { id: 'community', label: `Komunitas & Puskesmas (${(practicalExperiences || []).filter((item) => item.category === 'community').length})` },
   ];
 
   const filteredPractical = selectedFilter === 'all'
-    ? practicalExperiences
-    : practicalExperiences.filter((item) => item.category === selectedFilter);
+    ? (practicalExperiences || [])
+    : (practicalExperiences || []).filter((item) => item.category === selectedFilter);
 
   return (
     <div id="pkpa-works" className="space-y-24 py-16 lg:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,7 +89,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
 
         {/* PKPA Grid Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPractical.map((exp) => (
+          {(filteredPractical || []).map((exp) => (
             <div
               key={exp.id}
               onClick={() => onSelectExperience(exp)}
@@ -123,7 +123,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 </div>
 
                 {/* Pratinjau Foto Luar: Tampilkan foto pertama dari galeri sebagai cover thumbnail (h-40 object-cover rounded-xl). Sembunyikan jika foto 0. */}
-                {exp.galleryPhotos && exp.galleryPhotos.length > 0 && exp.galleryPhotos[0]?.url ? (
+                {(exp.galleryPhotos || []).length > 0 && exp.galleryPhotos?.[0]?.url ? (
                   <div className="w-full h-40 rounded-xl overflow-hidden bg-black/60 relative border border-white/10 group-hover:border-sky-400/40 transition-colors">
                     <img
                       src={exp.galleryPhotos[0].url}
@@ -134,7 +134,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
                       <ImageIcon className="w-3 h-3 text-sky-400" />
-                      <span>{exp.galleryPhotos.length} Foto</span>
+                      <span>{(exp.galleryPhotos || []).length} Foto</span>
                     </span>
                   </div>
                 ) : null}
@@ -165,7 +165,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-slate-400">
                   <span className="flex items-center gap-1 text-slate-300">
                     <ImageIcon className="w-3.5 h-3.5 text-sky-400" />
-                    {exp.galleryPhotos.length} Foto Dokumentasi
+                    {(exp.galleryPhotos || []).length} Foto Dokumentasi
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="text-slate-400 truncate">{exp.categoryLabel}</span>
@@ -221,7 +221,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
 
         {/* Organization Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {organizationExperiences.map((org) => (
+          {(organizationExperiences || []).map((org) => (
             <div
               key={org.id}
               onClick={() => onSelectExperience(org)}
@@ -255,7 +255,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 </div>
 
                 {/* Pratinjau Foto Luar jika ada foto */}
-                {org.galleryPhotos && org.galleryPhotos.length > 0 && org.galleryPhotos[0]?.url ? (
+                {(org.galleryPhotos || []).length > 0 && org.galleryPhotos?.[0]?.url ? (
                   <div className="w-full h-40 rounded-xl overflow-hidden bg-black/60 relative border border-white/10 group-hover:border-sky-400/40 transition-colors">
                     <img
                       src={org.galleryPhotos[0].url}
@@ -266,7 +266,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
                       <ImageIcon className="w-3 h-3 text-sky-400" />
-                      <span>{org.galleryPhotos.length} Foto</span>
+                      <span>{(org.galleryPhotos || []).length} Foto</span>
                     </span>
                   </div>
                 ) : null}
@@ -287,7 +287,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
 
                 {/* Competencies */}
                 <div className="flex flex-wrap gap-1.5 pt-2">
-                  {org.competencies.map((comp, idx) => (
+                  {(org.competencies || []).map((comp, idx) => (
                     <span
                       key={idx}
                       className="text-[11px] font-mono text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-900 border border-white/10"
