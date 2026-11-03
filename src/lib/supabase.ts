@@ -19,15 +19,35 @@ export interface FullPortfolioData {
   publication: PublicationItem;
 }
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+function isValidHttpUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && 
+  supabaseAnonKey && 
+  isValidHttpUrl(supabaseUrl)
+);
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-    })
+  ? (() => {
+      try {
+        return createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false },
+        });
+      } catch (e) {
+        console.warn('[Supabase] Init notice:', e);
+        return null;
+      }
+    })()
   : null;
 
 const SETTINGS_ROW_ID = 'main';
