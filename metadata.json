@@ -2,5 +2,7 @@
   "name": "Portofolio Andi Al Kahfi Akihito, S.Farm., Apt.",
   "description": "Portofolio interaktif Apoteker Andi Al Kahfi Akihito, S.Farm., Apt. - Pengalaman industri kosmetik CPKB, distribusi CDOB, dan pelayanan kefarmasian.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

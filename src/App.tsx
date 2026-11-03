@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowUp, Lock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowUp, Lock, Cloud, CloudUpload, Check } from 'lucide-react';
 import { FuturisticBackground } from './components/FuturisticBackground';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -22,6 +22,13 @@ import {
   INITIAL_CERTIFICATES,
   SCIENTIFIC_PUBLICATION 
 } from './data/pharmacyData';
+import { 
+  fetchPortfolioSettings, 
+  savePortfolioSettings, 
+  subscribeToPortfolioChanges, 
+  isSupabaseConfigured,
+  FullPortfolioData 
+} from './lib/supabase';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -182,6 +189,97 @@ export default function App() {
     }
     return SCIENTIFIC_PUBLICATION;
   });
+
+  // Cloud Sync state
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const isInitialMount = useRef(true);
+
+  // 1. Initial Cloud Sync from Supabase on load & Real-time subscription
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFromCloud = async () => {
+      if (!isSupabaseConfigured) return;
+      setCloudSyncStatus('syncing');
+      try {
+        const cloudData = await fetchPortfolioSettings();
+        if (cloudData && isMounted) {
+          if (cloudData.personalInfo) setPersonalInfo(cloudData.personalInfo);
+          if (cloudData.profilePhoto) setProfilePhoto(cloudData.profilePhoto);
+          if (cloudData.educationList) setEducationList(cloudData.educationList);
+          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences);
+          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences);
+          if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
+          if (cloudData.certificates) setCertificates(cloudData.certificates);
+          if (cloudData.publication) setPublication(cloudData.publication);
+          setCloudSyncStatus('synced');
+        } else {
+          setCloudSyncStatus('idle');
+        }
+      } catch (e) {
+        console.warn('[Cloud Sync] Initial load notice:', e);
+        if (isMounted) setCloudSyncStatus('idle');
+      }
+    };
+
+    loadFromCloud();
+
+    // 2. Real-time subscription for changes made from other admin sessions/devices
+    const unsubscribe = subscribeToPortfolioChanges((updated) => {
+      if (!isMounted) return;
+      if (updated.personalInfo) setPersonalInfo(updated.personalInfo);
+      if (updated.profilePhoto) setProfilePhoto(updated.profilePhoto);
+      if (updated.educationList) setEducationList(updated.educationList);
+      if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences);
+      if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences);
+      if (updated.skillGroups) setSkillGroups(updated.skillGroups);
+      if (updated.certificates) setCertificates(updated.certificates);
+      if (updated.publication) setPublication(updated.publication);
+      setCloudSyncStatus('synced');
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // 3. Centralized Auto-save to Supabase & localStorage whenever portfolio state changes
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const payload: FullPortfolioData = {
+      personalInfo,
+      profilePhoto,
+      educationList,
+      practicalExperiences,
+      organizationExperiences,
+      skillGroups,
+      certificates,
+      publication,
+    };
+
+    setCloudSyncStatus('syncing');
+    const timer = setTimeout(() => {
+      savePortfolioSettings(payload)
+        .then(() => setCloudSyncStatus('synced'))
+        .catch(() => setCloudSyncStatus('error'));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [
+    personalInfo,
+    profilePhoto,
+    educationList,
+    practicalExperiences,
+    organizationExperiences,
+    skillGroups,
+    certificates,
+    publication,
+  ]);
 
   // START / Masuk Portofolio handler
   const handleStartPortfolio = () => {
@@ -489,11 +587,20 @@ export default function App() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
           </span>
-          <span className="text-xs font-mono font-bold text-amber-300 hidden sm:inline">
-            Mode Admin Aktif • Simpan Otomatis
+          <span className="text-xs font-mono font-bold text-amber-300 hidden sm:inline-flex items-center gap-1.5">
+            <span>Mode Admin Aktif</span>
+            <span className="text-amber-500">·</span>
+            {isSupabaseConfigured ? (
+              <span className="text-sky-300 inline-flex items-center gap-1">
+                <Cloud className="w-3.5 h-3.5 text-sky-400" />
+                {cloudSyncStatus === 'syncing' ? 'Menyinkronkan Cloud...' : 'Cloud Sync (Supabase)'}
+              </span>
+            ) : (
+              <span>Simpan Otomatis</span>
+            )}
           </span>
           <span className="text-xs font-mono font-bold text-amber-300 sm:hidden">
-            Admin Aktif
+            {isSupabaseConfigured ? 'Admin · Supabase' : 'Admin Aktif'}
           </span>
           <button
             onClick={() => setIsEditMode(false)}
