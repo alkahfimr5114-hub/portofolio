@@ -1,6 +1,6 @@
 import { Project, SkillCategory, ExperienceItem, Testimonial } from '../types/portfolio';
 
-export const HERO_AVATAR = '/src/assets/images/dev_hero_portrait_1793687035850.jpg';
+export const HERO_AVATAR = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop';
 
 export const PROJECTS_DATA: Project[] = [
   {
@@ -12,7 +12,7 @@ export const PROJECTS_DATA: Project[] = [
     client: 'FinTech Nusantara',
     summary: 'Platform analitik cloud enterprise real-time untuk memantau performa ribuan container, latensi mikroservis, dan biaya komputasi secara presisi.',
     fullDescription: 'Cloudlytics adalah platform dashboard observabilitas yang memproses jutaan event metrik per menit. Dibangun dengan fokus pada kecepatan respon sub-100ms, visualisasi data interaktif, dan notifikasi anomali cerdas. Sistem ini menggabungkan rendering grafis canvas performa tinggi dengan pipeline data terdistribusi.',
-    image: '/src/assets/images/project_fintech_dashboard_1793687038036.jpg',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop',
     tags: ['React 19', 'TypeScript', 'Tailwind CSS', 'Node.js', 'PostgreSQL', 'WebSockets'],
     metrics: [
       { label: 'Latency Query', value: '< 45ms' },
@@ -38,7 +38,7 @@ export const PROJECTS_DATA: Project[] = [
     client: 'Studio Keramik Aurora',
     summary: 'Aplikasi belanja kurasi keramik mewah dengan pengalaman interaktif 3D preview produk, checkout kilat satu sentuhan, dan transisi fluid.',
     fullDescription: 'Aurora menghadirkan keanggunan belanja keramik artisanal ke genggaman pengguna. Dirancang dengan micro-interactions ultra-responsif, haptic feedback visual, dan alur checkout yang dipersingkat hingga 40% lebih cepat daripada e-commerce konvensional.',
-    image: '/src/assets/images/project_mobile_commerce_1793687037358.jpg',
+    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1200&auto=format&fit=crop',
     tags: ['React Native', 'TypeScript', 'Tailwind CSS', 'Framer Motion', 'Stripe API'],
     metrics: [
       { label: 'Konversi Checkout', value: '+42%' },
@@ -64,7 +64,7 @@ export const PROJECTS_DATA: Project[] = [
     client: 'Aether Digital London',
     summary: 'Situs galeri interaktif multi-penghargaan dengan arsitektur web modern, transisi halaman spasial, dan tipografi editorial berkarakter.',
     fullDescription: 'Dibuat untuk sebuah studio desain avant-garde global, Aether menggabungkan fluid motion physics dengan arsitektur web headless. Menghadirkan pameran portofolio visual imersif yang memenangkan apresiasi FWA of the Day dan Awwwards Honorable Mention.',
-    image: '/src/assets/images/project_creative_platform_1793687037640.jpg',
+    image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=1200&auto=format&fit=crop',
     tags: ['Next.js', 'Motion', 'Tailwind CSS', 'Canvas API', 'Headless CMS'],
     metrics: [
       { label: 'Awwwards Score', value: '8.7 / 10' },
@@ -90,7 +90,7 @@ export const PROJECTS_DATA: Project[] = [
     client: 'LegalTech Solusindo',
     summary: 'Asisten pemrosesan dan verifikasi dokumen legal dengan ekstraksi klausul berbasis pemodelan semantik dan antarmuka tinjau cepat dua kolom.',
     fullDescription: 'Synthex mengotomatisasi analisis klausul kontrak hukum yang panjang ke dalam ringkasan eksekutif, tabel perbandingan hak kewajiban, dan deteksi resiko instan. Mempersingkat waktu tinjauan pengacara dari 3 jam menjadi kurang dari 15 menit.',
-    image: '/src/assets/images/project_fintech_dashboard_1793687038036.jpg',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
     tags: ['React', 'TypeScript', 'Tailwind CSS', 'Python FastApi', 'LangChain', 'PostgreSQL'],
     metrics: [
       { label: 'Akurasi Ekstraksi', value: '99.2%' },

@@ -13,7 +13,8 @@ export const Contact: React.FC<ContactProps> = ({
   personalInfo,
   onUpdatePersonalInfo,
 }) => {
-  const whatsappHref = 'https://wa.me/6283196204080';
+  const cleanWa = (personalInfo.whatsapp || '').replace(/\D/g, '');
+  const whatsappHref = cleanWa ? `https://wa.me/${cleanWa}` : 'https://wa.me/6283196204080';
   const emailHref = `mailto:${personalInfo.email || 'alkahfimr5114@gmail.com'}`;
   const linkedinHref = personalInfo.linkedinUrl?.startsWith('http')
     ? personalInfo.linkedinUrl

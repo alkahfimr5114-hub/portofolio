@@ -98,6 +98,14 @@ export const Publication: React.FC<PublicationProps> = ({
                 onChange={(e) => onUpdatePublication({ ...publication, authors: e.target.value })}
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
               />
+              <label className="text-xs font-mono text-amber-300 block">Edit URL Tautan Jurnal / Publikasi:</label>
+              <input
+                type="url"
+                value={publication.url}
+                onChange={(e) => onUpdatePublication({ ...publication, url: e.target.value })}
+                placeholder="https://..."
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-amber-400 text-xs font-mono text-sky-300"
+              />
             </div>
           ) : (
             <>

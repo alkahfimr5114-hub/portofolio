@@ -16,7 +16,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { SkillCategoryItem, CertificateCardItem } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage } from '../lib/supabase';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
 
 interface SkillsProps {
   isEditMode?: boolean;
@@ -87,25 +87,29 @@ export const Skills: React.FC<SkillsProps> = ({
 
     try {
       const result = await uploadImageToSupabaseStorage(file, 'certificates');
-      if (result.url) {
+      let finalUrl = result.url;
+      if (!finalUrl) {
+        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+      }
+      if (finalUrl) {
         const targetCert = certificates.find((c) => c.id === certId);
         if (targetCert) {
-          onUpdateCertificate({ ...targetCert, imageUrl: result.url });
+          onUpdateCertificate({ ...targetCert, imageUrl: finalUrl });
         }
       }
     } catch (err: any) {
       console.error('Upload certificate image error:', err);
-      // Fallback to local DataURL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
+      try {
+        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        if (fallbackUrl) {
           const targetCert = certificates.find((c) => c.id === certId);
           if (targetCert) {
-            onUpdateCertificate({ ...targetCert, imageUrl: event.target.result as string });
+            onUpdateCertificate({ ...targetCert, imageUrl: fallbackUrl });
           }
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (canvasErr) {
+        console.error('Canvas compress error:', canvasErr);
+      }
     } finally {
       setUploadingCertId(null);
       e.target.value = '';

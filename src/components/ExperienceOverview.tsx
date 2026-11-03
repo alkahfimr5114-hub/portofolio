@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, ArrowRight, Building, Users, Sparkles, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Building, Users, Sparkles, Image as ImageIcon, Plus, Trash2, Edit3 } from 'lucide-react';
 import { ExperienceItem, ExperienceCategory } from '../types/pharmacy';
 
 interface ExperienceOverviewProps {
@@ -95,22 +95,38 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               onClick={() => onSelectExperience(exp)}
               className="group glass-futuristic-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl"
             >
-              {/* Admin delete button on card */}
-              {isEditMode && onDeletePractical && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Hapus pengalaman "${exp.institution}"?`)) {
-                      onDeletePractical(exp.id);
-                    }
-                  }}
-                  className="absolute top-4 right-4 z-20 p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
-                  title="Hapus Kartu Pengalaman Ini"
-                  aria-label="Hapus kartu pengalaman"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+              {/* Admin edit & delete buttons on card */}
+              {isEditMode && (
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectExperience(exp);
+                    }}
+                    className="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-lg hover:scale-110"
+                    title="Edit Pengalaman Ini"
+                    aria-label="Edit kartu pengalaman"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  {onDeletePractical && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Hapus pengalaman "${exp.institution}"?`)) {
+                          onDeletePractical(exp.id);
+                        }
+                      }}
+                      className="p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
+                      title="Hapus Kartu Pengalaman Ini"
+                      aria-label="Hapus kartu pengalaman"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="space-y-4">
@@ -227,22 +243,38 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               onClick={() => onSelectExperience(org)}
               className="group glass-futuristic-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl"
             >
-              {/* Admin delete button on card */}
-              {isEditMode && onDeleteOrganization && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Hapus pengalaman organisasi "${org.institution}"?`)) {
-                      onDeleteOrganization(org.id);
-                    }
-                  }}
-                  className="absolute top-4 right-4 z-20 p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
-                  title="Hapus Kartu Organisasi Ini"
-                  aria-label="Hapus kartu organisasi"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+              {/* Admin edit & delete buttons on card */}
+              {isEditMode && (
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectExperience(org);
+                    }}
+                    className="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-lg hover:scale-110"
+                    title="Edit Pengalaman Ini"
+                    aria-label="Edit kartu organisasi"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  {onDeleteOrganization && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Hapus pengalaman organisasi "${org.institution}"?`)) {
+                          onDeleteOrganization(org.id);
+                        }
+                      }}
+                      className="p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
+                      title="Hapus Kartu Organisasi Ini"
+                      aria-label="Hapus kartu organisasi"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="space-y-4">

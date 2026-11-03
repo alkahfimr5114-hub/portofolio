@@ -39,39 +39,156 @@ const DEFAULT_FALLBACK_IMAGES: Record<string, string> = {
   default: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?q=80&w=1200&auto=format&fit=crop',
 };
 
-function sanitizeExperienceItem(item: any): ExperienceItem {
+const defaultPracticalMap = new Map<string, ExperienceItem>(
+  PRACTICAL_EXPERIENCES.map((item) => [item.id, item])
+);
+const defaultOrgMap = new Map<string, ExperienceItem>(
+  ORGANIZATIONAL_EXPERIENCES.map((item) => [item.id, item])
+);
+
+function mergeWithDefaultPracticalExperience(item: any): ExperienceItem {
   if (!item || typeof item !== 'object') {
     return PRACTICAL_EXPERIENCES[0];
   }
-  const category = item.category || 'hospital';
+  const defaultItem = defaultPracticalMap.get(item.id);
+  const category = item.category || defaultItem?.category || 'hospital';
   const fallbackImg = DEFAULT_FALLBACK_IMAGES[category] || DEFAULT_FALLBACK_IMAGES.default;
 
+  // Merge fullOverview
+  const fullOverview = (typeof item.fullOverview === 'string' && item.fullOverview.trim().length > 0)
+    ? item.fullOverview
+    : (defaultItem?.fullOverview || item.shortSummary || defaultItem?.shortSummary || 'Pengalaman praktik kefarmasian komprehensif.');
+
+  // Merge dutiesAndAchievements
+  const dutiesAndAchievements = (Array.isArray(item.dutiesAndAchievements) && item.dutiesAndAchievements.length > 0)
+    ? item.dutiesAndAchievements
+    : (defaultItem?.dutiesAndAchievements || []);
+
+  // Merge regulatoryStandards
+  const regulatoryStandards = (Array.isArray(item.regulatoryStandards) && item.regulatoryStandards.length > 0)
+    ? item.regulatoryStandards
+    : (defaultItem?.regulatoryStandards || []);
+
+  // Merge competencies
+  const competencies = (Array.isArray(item.competencies) && item.competencies.length > 0)
+    ? item.competencies
+    : (defaultItem?.competencies || []);
+
+  // Merge metrics
+  const metrics = (Array.isArray(item.metrics) && item.metrics.length > 0)
+    ? item.metrics
+    : (defaultItem?.metrics || []);
+
+  // Image & galleryPhotos
   let image = item.image;
   if (!image || typeof image !== 'string' || image.startsWith('/src/assets/')) {
-    image = fallbackImg;
+    image = defaultItem?.image || fallbackImg;
   }
 
-  const rawPhotos = Array.isArray(item.galleryPhotos) ? item.galleryPhotos : [];
+  const rawPhotos = (Array.isArray(item.galleryPhotos) && item.galleryPhotos.length > 0)
+    ? item.galleryPhotos
+    : (defaultItem?.galleryPhotos || []);
+
   const galleryPhotos = rawPhotos.map((p: any, idx: number) => {
     let url = p?.url || '';
     if (!url || typeof url !== 'string' || url.startsWith('/src/assets/')) {
-      url = fallbackImg;
+      url = defaultItem?.galleryPhotos?.[idx]?.url || fallbackImg;
     }
     return {
       id: p?.id || `photo-${idx}-${Date.now()}`,
       url,
-      caption: p?.caption || 'Dokumentasi Praktik Kefarmasian',
+      caption: p?.caption || defaultItem?.galleryPhotos?.[idx]?.caption || 'Dokumentasi Praktik Kefarmasian',
     };
   });
 
   return {
     ...item,
+    type: 'practical',
+    institution: item.institution || defaultItem?.institution || 'Instansi Kefarmasian',
+    badgeLabel: item.badgeLabel || defaultItem?.badgeLabel || item.institution || 'PKPA',
+    role: item.role || defaultItem?.role || 'Apoteker Praktik',
+    period: item.period || defaultItem?.period || '',
+    location: item.location || defaultItem?.location || 'Makassar, Sulawesi Selatan',
+    category,
+    categoryLabel: item.categoryLabel || defaultItem?.categoryLabel || 'Hospital Pharmacy',
+    shortSummary: item.shortSummary || defaultItem?.shortSummary || fullOverview,
+    fullOverview,
     image,
     galleryPhotos,
-    dutiesAndAchievements: Array.isArray(item.dutiesAndAchievements) ? item.dutiesAndAchievements : [],
-    regulatoryStandards: Array.isArray(item.regulatoryStandards) ? item.regulatoryStandards : [],
-    competencies: Array.isArray(item.competencies) ? item.competencies : [],
-    metrics: Array.isArray(item.metrics) ? item.metrics : [],
+    dutiesAndAchievements,
+    regulatoryStandards,
+    competencies,
+    metrics,
+  };
+}
+
+function mergeWithDefaultOrgExperience(item: any): ExperienceItem {
+  if (!item || typeof item !== 'object') {
+    return ORGANIZATIONAL_EXPERIENCES[0];
+  }
+  const defaultItem = defaultOrgMap.get(item.id);
+  const category = 'organization';
+  const fallbackImg = DEFAULT_FALLBACK_IMAGES.organization || DEFAULT_FALLBACK_IMAGES.default;
+
+  const fullOverview = (typeof item.fullOverview === 'string' && item.fullOverview.trim().length > 0)
+    ? item.fullOverview
+    : (defaultItem?.fullOverview || item.shortSummary || defaultItem?.shortSummary || 'Pengalaman organisasi & akademik.');
+
+  const dutiesAndAchievements = (Array.isArray(item.dutiesAndAchievements) && item.dutiesAndAchievements.length > 0)
+    ? item.dutiesAndAchievements
+    : (defaultItem?.dutiesAndAchievements || []);
+
+  const regulatoryStandards = (Array.isArray(item.regulatoryStandards) && item.regulatoryStandards.length > 0)
+    ? item.regulatoryStandards
+    : (defaultItem?.regulatoryStandards || []);
+
+  const competencies = (Array.isArray(item.competencies) && item.competencies.length > 0)
+    ? item.competencies
+    : (defaultItem?.competencies || []);
+
+  const metrics = (Array.isArray(item.metrics) && item.metrics.length > 0)
+    ? item.metrics
+    : (defaultItem?.metrics || []);
+
+  let image = item.image;
+  if (!image || typeof image !== 'string' || image.startsWith('/src/assets/')) {
+    image = defaultItem?.image || fallbackImg;
+  }
+
+  const rawPhotos = (Array.isArray(item.galleryPhotos) && item.galleryPhotos.length > 0)
+    ? item.galleryPhotos
+    : (defaultItem?.galleryPhotos || []);
+
+  const galleryPhotos = rawPhotos.map((p: any, idx: number) => {
+    let url = p?.url || '';
+    if (!url || typeof url !== 'string' || url.startsWith('/src/assets/')) {
+      url = defaultItem?.galleryPhotos?.[idx]?.url || fallbackImg;
+    }
+    return {
+      id: p?.id || `photo-${idx}-${Date.now()}`,
+      url,
+      caption: p?.caption || defaultItem?.galleryPhotos?.[idx]?.caption || 'Dokumentasi Organisasi',
+    };
+  });
+
+  return {
+    ...item,
+    type: 'organization',
+    institution: item.institution || defaultItem?.institution || 'Organisasi Mahasiswa',
+    badgeLabel: item.badgeLabel || defaultItem?.badgeLabel || item.institution || 'Organisasi',
+    role: item.role || defaultItem?.role || 'Pengurus',
+    period: item.period || defaultItem?.period || '',
+    location: item.location || defaultItem?.location || 'Makassar, Sulawesi Selatan',
+    category,
+    categoryLabel: item.categoryLabel || defaultItem?.categoryLabel || 'Academic & Organization',
+    shortSummary: item.shortSummary || defaultItem?.shortSummary || fullOverview,
+    fullOverview,
+    image,
+    galleryPhotos,
+    dutiesAndAchievements,
+    regulatoryStandards,
+    competencies,
+    metrics,
   };
 }
 
@@ -177,17 +294,14 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.some((item: ExperienceItem) => item.id === 'rs-mata-makassar')) {
-          return parsed.map(sanitizeExperienceItem).map((item: ExperienceItem) => ({
-            ...item,
-            fullOverview: item.fullOverview?.replace(/dan Regulatory Affairs\s*/gi, '') || item.fullOverview,
-          }));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(mergeWithDefaultPracticalExperience);
         }
       } catch (e) {
         console.error(e);
       }
     }
-    return PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem);
+    return PRACTICAL_EXPERIENCES.map(mergeWithDefaultPracticalExperience);
   });
 
   // 5. Organization Experiences (Sanitizing 'UMI' to full 'Universitas Muslim Indonesia')
@@ -197,19 +311,13 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(sanitizeExperienceItem).map((item: ExperienceItem) => ({
-            ...item,
-            institution: item.institution?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.institution,
-            badgeLabel: item.badgeLabel?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.badgeLabel,
-            shortSummary: item.shortSummary?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.shortSummary,
-            fullOverview: item.fullOverview?.replace(/\bUMI\b/g, 'Universitas Muslim Indonesia') || item.fullOverview,
-          }));
+          return parsed.map(mergeWithDefaultOrgExperience);
         }
       } catch (e) {
         console.error(e);
       }
     }
-    return ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem);
+    return ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience);
   });
 
   // 6. Skill Groups (Tools, Lab, Software)
@@ -272,8 +380,8 @@ export default function App() {
           if (cloudData.personalInfo) setPersonalInfo(cloudData.personalInfo);
           if (cloudData.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(cloudData.profilePhoto));
           if (cloudData.educationList) setEducationList(cloudData.educationList);
-          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(sanitizeExperienceItem));
-          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(sanitizeExperienceItem));
+          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(mergeWithDefaultPracticalExperience));
+          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(mergeWithDefaultOrgExperience));
           if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
           if (cloudData.certificates) setCertificates(cloudData.certificates.map(sanitizeCertificate));
           if (cloudData.publication) setPublication(cloudData.publication);
@@ -295,8 +403,8 @@ export default function App() {
       if (updated.personalInfo) setPersonalInfo(updated.personalInfo);
       if (updated.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(updated.profilePhoto));
       if (updated.educationList) setEducationList(updated.educationList);
-      if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences.map(sanitizeExperienceItem));
-      if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences.map(sanitizeExperienceItem));
+      if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences.map(mergeWithDefaultPracticalExperience));
+      if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences.map(mergeWithDefaultOrgExperience));
       if (updated.skillGroups) setSkillGroups(updated.skillGroups);
       if (updated.certificates) setCertificates(updated.certificates.map(sanitizeCertificate));
       if (updated.publication) setPublication(updated.publication);
@@ -597,8 +705,8 @@ export default function App() {
     setPersonalInfo(PERSONAL_INFO);
     setProfilePhoto(PROFILE_PHOTO);
     setEducationList(EDUCATION_DATA);
-    setPracticalExperiences(PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem));
-    setOrganizationExperiences(ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem));
+    setPracticalExperiences(PRACTICAL_EXPERIENCES.map(mergeWithDefaultPracticalExperience));
+    setOrganizationExperiences(ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience));
     setSkillGroups(SKILL_GROUPS);
     setCertificates(INITIAL_CERTIFICATES.map(sanitizeCertificate));
     setPublication(SCIENTIFIC_PUBLICATION);
@@ -607,8 +715,8 @@ export default function App() {
       personalInfo: PERSONAL_INFO,
       profilePhoto: PROFILE_PHOTO,
       educationList: EDUCATION_DATA,
-      practicalExperiences: PRACTICAL_EXPERIENCES.map(sanitizeExperienceItem),
-      organizationExperiences: ORGANIZATIONAL_EXPERIENCES.map(sanitizeExperienceItem),
+      practicalExperiences: PRACTICAL_EXPERIENCES.map(mergeWithDefaultPracticalExperience),
+      organizationExperiences: ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience),
       skillGroups: SKILL_GROUPS,
       certificates: INITIAL_CERTIFICATES.map(sanitizeCertificate),
       publication: SCIENTIFIC_PUBLICATION,

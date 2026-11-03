@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowDown, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase, Loader2, Cloud } from 'lucide-react';
 import { EducationItem, PersonalInfo } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage } from '../lib/supabase';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
 
 interface HeroProps {
   onOpenCV?: () => void;
@@ -50,23 +50,27 @@ export const Hero: React.FC<HeroProps> = ({
 
     try {
       const result = await uploadImageToSupabaseStorage(file, 'profile');
-      if (result.url) {
-        onUpdateProfilePhoto(result.url);
+      let finalUrl = result.url;
+      if (!finalUrl) {
+        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+      }
+      if (finalUrl) {
+        onUpdateProfilePhoto(finalUrl);
         setUploadPhotoStatus(result.isCloud ? 'Tersimpan di Supabase Cloud!' : 'Foto tersimpan secara lokal');
         setTimeout(() => setUploadPhotoStatus(null), 3000);
       }
     } catch (err: any) {
       console.error('Upload profile photo error:', err);
-      // Fallback to local DataURL
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          onUpdateProfilePhoto(event.target.result as string);
+      try {
+        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        if (fallbackUrl) {
+          onUpdateProfilePhoto(fallbackUrl);
+          setUploadPhotoStatus('Tersimpan di perangkat lokal');
+          setTimeout(() => setUploadPhotoStatus(null), 3000);
         }
-      };
-      reader.readAsDataURL(file);
-      setUploadPhotoStatus('Tersimpan di perangkat lokal');
-      setTimeout(() => setUploadPhotoStatus(null), 3000);
+      } catch (fallbackErr) {
+        console.error('Fallback canvas error:', fallbackErr);
+      }
     } finally {
       setIsUploadingPhoto(false);
       e.target.value = '';
@@ -112,9 +116,19 @@ export const Hero: React.FC<HeroProps> = ({
           
           {/* Floating Pill Badge: [Pharmacist] (Top Left of Portfolio) */}
           <div className="absolute -top-5 sm:-top-7 left-2 sm:left-4 z-20">
-            <span className="pill-tag-badge text-xs sm:text-sm font-semibold tracking-wide">
-              {personalInfo.displayBadge || 'Pharmacist'}
-            </span>
+            {isEditMode ? (
+              <input
+                type="text"
+                value={personalInfo.displayBadge || 'Pharmacist'}
+                onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, displayBadge: e.target.value })}
+                className="pill-tag-badge text-xs sm:text-sm font-semibold tracking-wide bg-slate-900 border border-amber-400 text-amber-200 px-2 py-0.5 rounded-full"
+                title="Edit Label Badge Atas"
+              />
+            ) : (
+              <span className="pill-tag-badge text-xs sm:text-sm font-semibold tracking-wide">
+                {personalInfo.displayBadge || 'Pharmacist'}
+              </span>
+            )}
           </div>
 
           {/* Giant Typography: "Port" (Clean White Bold Sans) + "folio." (Electric Blue Italic Serif Gradient) */}
@@ -132,9 +146,19 @@ export const Hero: React.FC<HeroProps> = ({
 
           {/* Floating Pill Badge: [2026] (Bottom Right beside cyan period dot) */}
           <div className="absolute -bottom-3 sm:-bottom-5 right-2 sm:right-6 z-20">
-            <span className="pill-tag-badge text-xs sm:text-sm font-mono font-bold tracking-wider">
-              {personalInfo.yearBadge || '2026'}
-            </span>
+            {isEditMode ? (
+              <input
+                type="text"
+                value={personalInfo.yearBadge || '2026'}
+                onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, yearBadge: e.target.value })}
+                className="pill-tag-badge text-xs sm:text-sm font-mono font-bold tracking-wider bg-slate-900 border border-amber-400 text-amber-200 px-2 py-0.5 rounded-full w-20 text-center"
+                title="Edit Tahun Badge"
+              />
+            ) : (
+              <span className="pill-tag-badge text-xs sm:text-sm font-mono font-bold tracking-wider">
+                {personalInfo.yearBadge || '2026'}
+              </span>
+            )}
           </div>
 
         </div>

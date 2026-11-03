@@ -7,6 +7,7 @@ import {
   CertificateCardItem, 
   PublicationItem 
 } from '../types/pharmacy';
+import { Project } from '../types/portfolio';
 
 export interface FullPortfolioData {
   personalInfo: PersonalInfo;
@@ -17,6 +18,7 @@ export interface FullPortfolioData {
   skillGroups: SkillCategoryItem[];
   certificates: CertificateCardItem[];
   publication: PublicationItem;
+  projects?: Project[];
 }
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();

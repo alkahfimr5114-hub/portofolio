@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Calendar, MapPin, Building, ShieldCheck, CheckCircle2, 
+  X, Calendar, MapPin, Building, CheckCircle2, 
   ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, Plus, 
-  Trash2, Upload, Sparkles, ExternalLink, Cpu, Loader2, Cloud 
+  Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud 
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage } from '../lib/supabase';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
 
 interface ExperienceDetailModalProps {
   experience: ExperienceItem | null;
@@ -29,7 +29,22 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   const [newPhotoCaption, setNewPhotoCaption] = useState('');
   const [showAddPhotoForm, setShowAddPhotoForm] = useState(false);
   const [newDutyText, setNewDutyText] = useState('');
+  const [newCompetencyText, setNewCompetencyText] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
+  // Reset activePhotoIndex whenever experience changes to avoid out-of-bounds error
+  useEffect(() => {
+    setActivePhotoIndex(null);
+    setShowAddPhotoForm(false);
+    setNewPhotoUrl('');
+    setNewPhotoCaption('');
+    setNewDutyText('');
+    setNewCompetencyText('');
+    setUploadStatus(null);
+  }, [experience?.id]);
+
+  // Handle ESC key and scroll lock
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -52,11 +67,23 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
 
   if (!experience) return null;
 
+  // Safe fallback arrays to prevent any possible crash
+  const duties = Array.isArray(experience.dutiesAndAchievements) && experience.dutiesAndAchievements.length > 0 
+    ? experience.dutiesAndAchievements 
+    : [];
+  const photos = Array.isArray(experience.galleryPhotos) 
+    ? experience.galleryPhotos 
+    : [];
+  const competencies = Array.isArray(experience.competencies) && experience.competencies.length > 0 
+    ? experience.competencies 
+    : [];
+
+  // Carousel navigation
   const currentIndex = allExperiences.findIndex((item) => item.id === experience.id);
   const prevExperience = currentIndex > 0 ? allExperiences[currentIndex - 1] : null;
-  const nextExperience = currentIndex < allExperiences.length - 1 ? allExperiences[currentIndex + 1] : null;
+  const nextExperience = currentIndex >= 0 && currentIndex < allExperiences.length - 1 ? allExperiences[currentIndex + 1] : null;
 
-  // Add photo handler
+  // Add photo via URL
   const handleAddPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPhotoUrl.trim()) return;
@@ -69,7 +96,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
 
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: [...(experience.galleryPhotos || []), newPhoto],
+      galleryPhotos: [...photos, newPhoto],
     };
 
     onUpdateExperience(updated);
@@ -78,73 +105,117 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     setShowAddPhotoForm(false);
   };
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-
-  // Upload image to Supabase Storage (bucket: 'portfolio-images')
+  // Upload photo file: tries Supabase Storage first, then compresses via Canvas to Base64 DataURL
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    setUploadStatus('Mengunggah ke Supabase Storage...');
+    setUploadStatus('Mengunggah foto...');
 
     try {
+      // 1. Try Supabase Storage upload
       const result = await uploadImageToSupabaseStorage(file, 'pkpa');
-      if (result.url) {
+      let finalUrl = result.url;
+
+      // 2. If storage returned empty, guarantee compressed Base64 DataURL via Canvas
+      if (!finalUrl) {
+        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+      }
+
+      if (finalUrl) {
         const newPhoto: GalleryPhoto = {
           id: `photo-${Date.now()}`,
-          url: result.url,
+          url: finalUrl,
           caption: file.name.replace(/\.[^/.]+$/, ''),
         };
         const updated: ExperienceItem = {
           ...experience,
-          galleryPhotos: [...(experience.galleryPhotos || []), newPhoto],
+          galleryPhotos: [...photos, newPhoto],
         };
         onUpdateExperience(updated);
-        setUploadStatus(result.isCloud ? 'Berhasil tersimpan di Cloud Storage!' : 'Tersimpan lokal.');
+        setUploadStatus(result.isCloud ? 'Tersimpan di Cloud Storage!' : 'Foto berhasil diunggah!');
         setTimeout(() => setUploadStatus(null), 3500);
       } else {
-        setUploadStatus('Gagal mengunggah gambar.');
-        setTimeout(() => setUploadStatus(null), 4000);
+        setUploadStatus('Gagal memproses gambar.');
+        setTimeout(() => setUploadStatus(null), 3500);
       }
     } catch (err) {
-      console.error(err);
-      setUploadStatus('Terjadi kesalahan saat unggah.');
-      setTimeout(() => setUploadStatus(null), 4000);
+      console.error('File upload error:', err);
+      // Fallback: direct FileReader
+      try {
+        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        if (fallbackUrl) {
+          const newPhoto: GalleryPhoto = {
+            id: `photo-${Date.now()}`,
+            url: fallbackUrl,
+            caption: file.name.replace(/\.[^/.]+$/, ''),
+          };
+          onUpdateExperience({
+            ...experience,
+            galleryPhotos: [...photos, newPhoto],
+          });
+          setUploadStatus('Foto berhasil disimpan!');
+          setTimeout(() => setUploadStatus(null), 3500);
+        }
+      } catch (fallbackErr) {
+        setUploadStatus('Terjadi kesalahan saat unggah.');
+        setTimeout(() => setUploadStatus(null), 3500);
+      }
     } finally {
       setIsUploading(false);
       e.target.value = '';
     }
   };
 
-  // Delete photo handler
+  // Delete photo
   const handleDeletePhoto = (photoId: string) => {
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: (experience.galleryPhotos || []).filter((p) => p.id !== photoId),
+      galleryPhotos: photos.filter((p) => p.id !== photoId),
     };
     onUpdateExperience(updated);
   };
 
-  // Add duty bullet handler
+  // Add duty
   const handleAddDuty = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDutyText.trim()) return;
 
     const updated: ExperienceItem = {
       ...experience,
-      dutiesAndAchievements: [...(experience.dutiesAndAchievements || []), newDutyText.trim()],
+      dutiesAndAchievements: [...duties, newDutyText.trim()],
     };
     onUpdateExperience(updated);
     setNewDutyText('');
   };
 
-  // Delete duty bullet
+  // Delete duty
   const handleDeleteDuty = (index: number) => {
     const updated: ExperienceItem = {
       ...experience,
-      dutiesAndAchievements: (experience.dutiesAndAchievements || []).filter((_, i) => i !== index),
+      dutiesAndAchievements: duties.filter((_, i) => i !== index),
+    };
+    onUpdateExperience(updated);
+  };
+
+  // Add competency
+  const handleAddCompetency = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCompetencyText.trim()) return;
+    const updated: ExperienceItem = {
+      ...experience,
+      competencies: [...competencies, newCompetencyText.trim()],
+    };
+    onUpdateExperience(updated);
+    setNewCompetencyText('');
+  };
+
+  // Delete competency
+  const handleDeleteCompetency = (index: number) => {
+    const updated: ExperienceItem = {
+      ...experience,
+      competencies: competencies.filter((_, i) => i !== index),
     };
     onUpdateExperience(updated);
   };
@@ -158,10 +229,10 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         aria-hidden="true"
       />
 
-      {/* Main Modal Detail View */}
+      {/* Main Modal Card View */}
       <div className="relative w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-3xl glass-modal-deep border border-sky-500/40 p-5 sm:p-8 lg:p-10 text-left z-10 space-y-7 shadow-[0_0_60px_rgba(0,112,243,0.3)]">
         
-        {/* Top Breadcrumb & Switcher Bar */}
+        {/* A. Top Breadcrumb & Navigation Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/15">
           <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-hidden">
             <button
@@ -206,7 +277,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               </button>
             )}
 
-            {/* Close */}
+            {/* Close Button */}
             <button
               onClick={onClose}
               aria-label="Tutup"
@@ -217,12 +288,12 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Instansi Pill Badge & Title */}
+        {/* B. Instansi Pill Badge, Periode, Lokasi, Judul & Peran */}
         <div className="space-y-3">
           {isEditMode ? (
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
               <div className="text-xs font-mono text-amber-300 font-bold flex items-center justify-between">
-                <span>Edit Informasi Pengalaman (Tersimpan Otomatis):</span>
+                <span>Edit Informasi Pengalaman:</span>
                 <span className="text-[10px] text-amber-400">Mode Admin</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -284,7 +355,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Exact Instansi Pill Badge specified in prompt */}
+              {/* Pill Badges */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="pill-badge text-xs font-mono font-bold text-sky-300 border-sky-400/50 bg-sky-950/60 shadow-[0_0_15px_rgba(0,112,243,0.3)]">
                   {experience.badgeLabel}
@@ -299,10 +370,12 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                 </span>
               </div>
 
+              {/* Title Instansi */}
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] text-white">
                 {experience.institution}
               </h2>
 
+              {/* Role */}
               <div className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
                 <Building className="w-4 h-4 text-sky-400 shrink-0" />
                 <span>Peran: {experience.role}</span>
@@ -311,24 +384,24 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
         </div>
 
-        {/* Overview Statement */}
+        {/* C. Kotak Ringkasan / Overview Pengalaman (fullOverview) */}
         <div className="p-5 rounded-2xl glass-futuristic-card text-sm sm:text-base text-slate-200 leading-relaxed border-sky-500/20">
           {isEditMode ? (
             <div className="space-y-1.5">
               <label className="text-xs font-mono text-amber-300 block font-semibold">Edit Ringkasan / Overview Pengalaman:</label>
               <textarea
                 rows={3}
-                value={experience.fullOverview}
+                value={experience.fullOverview || ''}
                 onChange={(e) => onUpdateExperience({ ...experience, fullOverview: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-900 border border-amber-400/50 text-sm text-white focus:outline-none focus:border-amber-400"
               />
             </div>
           ) : (
-            experience.fullOverview
+            <p>{experience.fullOverview || experience.shortSummary || 'Ringkasan kegiatan praktik kefarmasian profesional.'}</p>
           )}
         </div>
 
-        {/* Rincian Tugas & Pencapaian Lengkap */}
+        {/* D. Kotak "Detail Tugas & Pencapaian Praktik" (dutiesAndAchievements) */}
         <div className="p-6 rounded-2xl glass-futuristic-card border border-white/15 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
             <h3 className="text-base sm:text-lg font-bold font-['Outfit'] text-white flex items-center gap-2">
@@ -343,23 +416,27 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           </div>
 
           <div className="space-y-3">
-            {(experience.dutiesAndAchievements || []).map((duty, idx) => (
-              <div key={idx} className="flex items-start justify-between gap-3 text-xs sm:text-sm text-slate-200 leading-relaxed group">
-                <div className="flex items-start gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 mt-2 shrink-0 shadow-[0_0_6px_#00d4ff]" aria-hidden="true" />
-                  <span>{duty}</span>
+            {duties.length > 0 ? (
+              duties.map((duty, idx) => (
+                <div key={idx} className="flex items-start justify-between gap-3 text-xs sm:text-sm text-slate-200 leading-relaxed group">
+                  <div className="flex items-start gap-2.5">
+                    <span className="w-2 h-2 rounded-full bg-sky-400 mt-2 shrink-0 shadow-[0_0_6px_#00d4ff]" aria-hidden="true" />
+                    <span>{duty}</span>
+                  </div>
+                  {isEditMode && (
+                    <button
+                      onClick={() => handleDeleteDuty(idx)}
+                      className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-950/50 transition-colors shrink-0 cursor-pointer"
+                      title="Hapus poin tugas"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-                {isEditMode && (
-                  <button
-                    onClick={() => handleDeleteDuty(idx)}
-                    className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-950/50 transition-colors shrink-0"
-                    title="Hapus poin tugas"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs font-mono text-slate-400 italic">Rincian tugas praktik sedang disinkronkan.</p>
+            )}
           </div>
 
           {/* Form Tambah Tugas Baru in Edit Mode */}
@@ -382,7 +459,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
         </div>
 
-        {/* AREA GALERI FOTO DOKUMENTASI PKPA (FITUR SPESIFIK USER REQUEST) */}
+        {/* E. Kotak "Galeri Dokumentasi Foto PKPA" (galleryPhotos) */}
         <div className="p-6 rounded-2xl glass-futuristic-card border border-sky-500/30 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
             <div>
@@ -395,7 +472,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               </p>
             </div>
 
-            {/* Add photo controls - ONLY available when Admin Edit Mode is unlocked via PIN */}
+            {/* Controls upload foto (Admin Only) */}
             {isEditMode ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-mono text-amber-300 bg-amber-950/60 border border-amber-600 px-2.5 py-1 rounded-full">
@@ -421,6 +498,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                 )}
 
                 <button
+                  type="button"
                   onClick={() => setShowAddPhotoForm(!showAddPhotoForm)}
                   className="pill-badge text-xs py-1.5 px-3 hover:border-white text-white transition-colors cursor-pointer"
                 >
@@ -438,7 +516,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             ) : (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-mono text-slate-400 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                  {(experience.galleryPhotos || []).length} Foto Dokumentasi
+                  {photos.length} Foto Dokumentasi
                 </span>
               </div>
             )}
@@ -485,20 +563,26 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </form>
           )}
 
-          {/* Grid Foto Dokumentasi dengan Proposi Utuh (object-contain + neat caption label) */}
-          {(experience.galleryPhotos || []).length > 0 ? (
+          {/* Grid Foto Dokumentasi dengan object-contain dan caption yang dapat diedit */}
+          {photos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              {(experience.galleryPhotos || []).map((photo, pIdx) => (
+              {photos.map((photo, pIdx) => (
                 <div
-                  key={photo.id}
+                  key={photo.id || pIdx}
                   className="group relative rounded-2xl overflow-hidden border border-white/15 hover:border-sky-400/70 bg-gradient-to-b from-slate-900/90 to-black/95 p-3 flex flex-col justify-between transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,112,243,0.3)] cursor-pointer"
                   onClick={() => setActivePhotoIndex(pIdx)}
                 >
-                  {/* Image Frame with object-contain to display full image without clipping */}
+                  {/* Image Frame */}
                   <div className="relative w-full h-48 sm:h-56 rounded-xl overflow-hidden bg-black/90 flex items-center justify-center border border-white/5">
                     <img
                       src={photo.url}
-                      alt={photo.caption}
+                      alt={photo.caption || 'Foto dokumentasi'}
+                      onError={(e) => {
+                        // Fallback jika URL gagal dimuat
+                        if (e.currentTarget.src !== 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop') {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200&auto=format&fit=crop';
+                        }
+                      }}
                       className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-500"
                       referrerPolicy="no-referrer"
                     />
@@ -510,7 +594,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                       </span>
                     </div>
 
-                    {/* Delete button strictly visible in Admin Edit Mode */}
+                    {/* Delete button (Admin Only) */}
                     {isEditMode && (
                       <button
                         onClick={(e) => {
@@ -525,16 +609,16 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                     )}
                   </div>
 
-                  {/* Caption Label below image (editable by admin in edit mode) */}
+                  {/* Caption label under image */}
                   <div className="pt-2.5 px-1" onClick={(e) => isEditMode && e.stopPropagation()}>
                     {isEditMode ? (
                       <div className="space-y-1">
                         <label className="text-[10px] font-mono text-amber-300 block">Keterangan Foto:</label>
                         <input
                           type="text"
-                          value={photo.caption}
+                          value={photo.caption || ''}
                           onChange={(e) => {
-                            const updatedPhotos = (experience.galleryPhotos || []).map((p) =>
+                            const updatedPhotos = photos.map((p) =>
                               p.id === photo.id ? { ...p, caption: e.target.value } : p
                             );
                             onUpdateExperience({ ...experience, galleryPhotos: updatedPhotos });
@@ -545,7 +629,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                       </div>
                     ) : (
                       <p className="text-xs font-mono text-slate-200 line-clamp-2 leading-relaxed">
-                        {photo.caption}
+                        {photo.caption || 'Dokumentasi Praktik Kefarmasian'}
                       </p>
                     )}
                   </div>
@@ -561,57 +645,70 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
         </div>
 
-        {/* Standar Regulasi & Kompetensi */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 rounded-xl glass-futuristic-card text-left space-y-2">
-            <div className="text-xs font-mono text-sky-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Standar Regulasi Kepatuhan:</span>
+        {/* F. Bagian Bawah: Kompetensi */}
+        <div className="p-5 rounded-2xl glass-futuristic-card border border-white/10 space-y-3 text-left">
+          <div className="flex items-center justify-between">
+            <div className="text-xs sm:text-sm font-mono text-sky-400 font-bold flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-sky-400" />
+              <span>Kompetensi</span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(experience.regulatoryStandards || []).map((std, i) => (
-                <span key={i} className="px-2.5 py-1 rounded-md text-xs font-mono text-slate-200 bg-slate-900 border border-slate-700">
-                  {std}
-                </span>
-              ))}
-            </div>
+            {isEditMode && (
+              <span className="text-[10px] font-mono text-amber-300 bg-amber-950/70 border border-amber-600/50 px-2 py-0.5 rounded">
+                Admin: Kelola Kompetensi
+              </span>
+            )}
           </div>
 
-          <div className="p-4 rounded-xl glass-futuristic-card text-left space-y-2">
-            <div className="text-xs font-mono text-sky-400 uppercase tracking-wider font-bold flex items-center gap-1.5">
-              <Cpu className="w-4 h-4" />
-              <span>Kompetensi Teknis Terlatih:</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(experience.competencies || []).map((comp, i) => (
-                <span key={i} className="px-2.5 py-0.5 rounded text-xs font-mono text-slate-300 bg-black/80 border border-slate-800">
-                  {comp}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {competencies.length > 0 ? (
+              competencies.map((comp, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-sky-200 bg-sky-950/40 border border-sky-500/30 shadow-[0_0_10px_rgba(0,112,243,0.15)] hover:border-sky-400/60 transition-all group"
+                >
+                  <span>{comp}</span>
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCompetency(i)}
+                      className="text-red-400 hover:text-red-200 cursor-pointer p-0.5 rounded hover:bg-red-950/50 transition-colors"
+                      title="Hapus kompetensi ini"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                 </span>
-              ))}
-            </div>
+              ))
+            ) : (
+              <span className="text-xs font-mono text-slate-400 italic">Kompetensi profesional apoteker.</span>
+            )}
           </div>
+
+          {/* Form Tambah Kompetensi Baru in Edit Mode */}
+          {isEditMode && (
+            <form onSubmit={handleAddCompetency} className="pt-2 border-t border-white/10 flex gap-2">
+              <input
+                type="text"
+                placeholder="Tambah nama kompetensi baru..."
+                value={newCompetencyText}
+                onChange={(e) => setNewCompetencyText(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-colors cursor-pointer shrink-0"
+              >
+                + Tambah
+              </button>
+            </form>
+          )}
         </div>
 
-        {/* Metrik Indikator Kinerja Utama (Safe) */}
-        {(experience.metrics || []).length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-            {(experience.metrics || []).map((m, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-slate-900/60 border border-white/10 text-center">
-                <div className="text-xs font-mono text-slate-400">{m.label}</div>
-                <div className="text-sm font-bold text-sky-300 font-mono mt-0.5">{m.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="pt-6 border-t border-white/15 flex items-center justify-between">
-          <div className="text-xs font-mono text-slate-400">
-            Terdaftar Resmi Portofolio PKPA PSPA UNHAS & UMI
-          </div>
+        {/* Footer Modal: Tombol Tutup & Kembali di pojok kanan bawah */}
+        <div className="pt-4 border-t border-white/10 flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full bg-white text-black text-xs sm:text-sm font-bold hover:bg-slate-200 transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-full bg-white text-black text-xs sm:text-sm font-bold hover:bg-slate-200 transition-all cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98]"
           >
             Tutup & Kembali
           </button>
@@ -620,23 +717,23 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       </div>
 
       {/* Lightbox Zoom Foto */}
-      {activePhotoIndex !== null && (experience.galleryPhotos || [])[activePhotoIndex] && (
+      {activePhotoIndex !== null && photos[activePhotoIndex] && (
         <div 
           className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center p-4"
           onClick={() => setActivePhotoIndex(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
             <img
-              src={(experience.galleryPhotos || [])[activePhotoIndex]?.url}
-              alt={(experience.galleryPhotos || [])[activePhotoIndex]?.caption}
+              src={photos[activePhotoIndex].url}
+              alt={photos[activePhotoIndex].caption || 'Dokumentasi'}
               className="max-h-[80vh] w-auto rounded-xl object-contain shadow-2xl border border-sky-400/40"
             />
             <div className="mt-3 text-sm font-mono text-white text-center bg-black/70 px-4 py-2 rounded-full border border-white/20">
-              {(experience.galleryPhotos || [])[activePhotoIndex]?.caption}
+              {photos[activePhotoIndex].caption || 'Dokumentasi Praktik Kefarmasian'}
             </div>
             <button
               onClick={() => setActivePhotoIndex(null)}
-              className="absolute -top-10 right-0 p-2 text-white hover:text-sky-300"
+              className="absolute -top-10 right-0 p-2 text-white hover:text-sky-300 cursor-pointer"
             >
               <X className="w-6 h-6" />
             </button>
