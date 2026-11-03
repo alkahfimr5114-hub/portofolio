@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, MapPin, Building, ShieldCheck, CheckCircle2, 
   ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, Plus, 
-  Trash2, Upload, Sparkles, ExternalLink, Cpu 
+  Trash2, Upload, Sparkles, ExternalLink, Cpu, Loader2, Cloud 
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
+import { uploadImageToSupabaseStorage } from '../lib/supabase';
 
 interface ExperienceDetailModalProps {
   experience: ExperienceItem | null;
@@ -77,26 +78,43 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     setShowAddPhotoForm(false);
   };
 
-  // Upload local image via FileReader
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  // Upload image to Supabase Storage (bucket: 'portfolio-images')
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const newPhoto: GalleryPhoto = {
-            id: `photo-${Date.now()}`,
-            url: event.target.result as string,
-            caption: file.name.replace(/\.[^/.]+$/, ''),
-          };
-          const updated: ExperienceItem = {
-            ...experience,
-            galleryPhotos: [...experience.galleryPhotos, newPhoto],
-          };
-          onUpdateExperience(updated);
-        }
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadStatus('Mengunggah ke Supabase Storage...');
+
+    try {
+      const result = await uploadImageToSupabaseStorage(file, 'pkpa');
+      if (result.url) {
+        const newPhoto: GalleryPhoto = {
+          id: `photo-${Date.now()}`,
+          url: result.url,
+          caption: file.name.replace(/\.[^/.]+$/, ''),
+        };
+        const updated: ExperienceItem = {
+          ...experience,
+          galleryPhotos: [...experience.galleryPhotos, newPhoto],
+        };
+        onUpdateExperience(updated);
+        setUploadStatus(result.isCloud ? 'Berhasil tersimpan di Cloud Storage!' : 'Tersimpan lokal.');
+        setTimeout(() => setUploadStatus(null), 3500);
+      } else {
+        setUploadStatus('Gagal mengunggah gambar.');
+        setTimeout(() => setUploadStatus(null), 4000);
+      }
+    } catch (err) {
+      console.error(err);
+      setUploadStatus('Terjadi kesalahan saat unggah.');
+      setTimeout(() => setUploadStatus(null), 4000);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -383,16 +401,24 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                 <span className="text-[11px] font-mono text-amber-300 bg-amber-950/60 border border-amber-600 px-2.5 py-1 rounded-full">
                   Admin Aktif
                 </span>
-                <label className="pill-badge text-xs py-1.5 px-3 cursor-pointer hover:border-sky-400 text-sky-300 transition-colors">
-                  <Upload className="w-3.5 h-3.5 mr-1.5" />
-                  <span>Unggah Foto</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </label>
+
+                {isUploading ? (
+                  <span className="pill-badge text-xs py-1.5 px-3 bg-sky-950/80 border-sky-400 text-sky-300 flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                    <span>Mengunggah...</span>
+                  </span>
+                ) : (
+                  <label className="pill-badge text-xs py-1.5 px-3 cursor-pointer hover:border-sky-400 text-sky-300 transition-colors flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Unggah Foto</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
 
                 <button
                   onClick={() => setShowAddPhotoForm(!showAddPhotoForm)}
@@ -401,6 +427,13 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                   <Plus className="w-3.5 h-3.5 mr-1" />
                   <span>Input URL</span>
                 </button>
+
+                {uploadStatus && (
+                  <span className="text-[11px] font-mono text-sky-300 bg-sky-950/90 border border-sky-500/50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <Cloud className="w-3 h-3 text-sky-400" />
+                    <span>{uploadStatus}</span>
+                  </span>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2">

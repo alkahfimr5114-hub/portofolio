@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowDown, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase } from 'lucide-react';
+import { ArrowDown, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase, Loader2, Cloud } from 'lucide-react';
 import { EducationItem, PersonalInfo } from '../types/pharmacy';
+import { uploadImageToSupabaseStorage } from '../lib/supabase';
 
 interface HeroProps {
   onOpenCV?: () => void;
@@ -37,10 +38,26 @@ export const Hero: React.FC<HeroProps> = ({
 }) => {
   const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
   const [photoUrlTemp, setPhotoUrlTemp] = useState('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [uploadPhotoStatus, setUploadPhotoStatus] = useState<string | null>(null);
 
-  const handlePhotoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    setUploadPhotoStatus('Mengunggah ke Supabase Storage...');
+
+    try {
+      const result = await uploadImageToSupabaseStorage(file, 'profile');
+      if (result.url) {
+        onUpdateProfilePhoto(result.url);
+        setUploadPhotoStatus(result.isCloud ? 'Tersimpan di Supabase Cloud!' : 'Foto tersimpan secara lokal');
+        setTimeout(() => setUploadPhotoStatus(null), 3000);
+      }
+    } catch (err: any) {
+      console.error('Upload profile photo error:', err);
+      // Fallback to local DataURL
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -48,6 +65,11 @@ export const Hero: React.FC<HeroProps> = ({
         }
       };
       reader.readAsDataURL(file);
+      setUploadPhotoStatus('Tersimpan di perangkat lokal');
+      setTimeout(() => setUploadPhotoStatus(null), 3000);
+    } finally {
+      setIsUploadingPhoto(false);
+      e.target.value = '';
     }
   };
 
@@ -397,16 +419,23 @@ export const Hero: React.FC<HeroProps> = ({
                       </div>
 
                       <div className="flex flex-col gap-2 w-full max-w-[200px]">
-                        <label className="w-full py-2 px-3 rounded-full bg-sky-500 hover:bg-sky-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-lg transition-transform hover:scale-105">
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Pilih Foto dari Perangkat</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoFileUpload}
-                            className="hidden"
-                          />
-                        </label>
+                        {isUploadingPhoto ? (
+                          <div className="w-full py-2 px-3 rounded-full bg-sky-950 border border-sky-400 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400" />
+                            <span>Mengunggah...</span>
+                          </div>
+                        ) : (
+                          <label className="w-full py-2 px-3 rounded-full bg-sky-500 hover:bg-sky-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-lg transition-transform hover:scale-105">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Pilih Foto dari Perangkat</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoFileUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
 
                         <button
                           type="button"
@@ -416,6 +445,13 @@ export const Hero: React.FC<HeroProps> = ({
                           <LinkIcon className="w-3 h-3" />
                           <span>Gunakan URL Foto</span>
                         </button>
+
+                        {uploadPhotoStatus && (
+                          <div className="text-[10px] font-mono text-center text-sky-300 bg-sky-950/90 border border-sky-500/50 px-2 py-1 rounded-full flex items-center justify-center gap-1">
+                            <Cloud className="w-3 h-3 text-sky-400" />
+                            <span>{uploadPhotoStatus}</span>
+                          </div>
+                        )}
                       </div>
 
                       {showPhotoUrlInput && (

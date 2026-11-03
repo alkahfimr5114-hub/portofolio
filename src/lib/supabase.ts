@@ -192,3 +192,80 @@ export function subscribeToPortfolioChanges(
     return () => {};
   }
 }
+
+export const BUCKET_NAME = 'portfolio-images';
+
+export interface StorageUploadResult {
+  url: string;
+  isCloud: boolean;
+  error?: string;
+}
+
+/**
+ * Upload an image file to Supabase Storage bucket 'portfolio-images'.
+ * Automatically retrieves the public URL for permanent cloud access.
+ * If cloud upload fails or bucket is unavailable, safely falls back to DataURL
+ * so user edits are preserved without interruption.
+ */
+export async function uploadImageToSupabaseStorage(
+  file: File,
+  folder: string = 'general'
+): Promise<StorageUploadResult> {
+  if (supabase) {
+    try {
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const cleanBaseName = file.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .slice(0, 30);
+      const filePath = `${folder}/${Date.now()}_${cleanBaseName}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type || 'image/jpeg',
+        });
+
+      if (!error && data?.path) {
+        const { data: publicData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(data.path);
+
+        if (publicData?.publicUrl) {
+          return {
+            url: publicData.publicUrl,
+            isCloud: true,
+          };
+        }
+      } else if (error) {
+        console.warn('[Supabase Storage] Upload notice:', error.message);
+      }
+    } catch (err: any) {
+      console.warn('[Supabase Storage] Upload exception:', err);
+    }
+  }
+
+  // Fallback to FileReader Base64 DataURL
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      resolve({
+        url: (e.target?.result as string) || '',
+        isCloud: false,
+        error: supabase
+          ? 'Bucket "portfolio-images" belum siap atau akses publik belum aktif. Foto tersimpan ke penyimpanan data.'
+          : undefined,
+      });
+    };
+    reader.onerror = () => {
+      resolve({
+        url: '',
+        isCloud: false,
+        error: 'Gagal memproses file foto.',
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}

@@ -11,9 +11,12 @@ import {
   Camera, 
   Calendar, 
   Building2,
-  FileCheck
+  FileCheck,
+  Loader2,
+  Cloud
 } from 'lucide-react';
 import { SkillCategoryItem, CertificateCardItem } from '../types/pharmacy';
+import { uploadImageToSupabaseStorage } from '../lib/supabase';
 
 interface SkillsProps {
   isEditMode?: boolean;
@@ -44,6 +47,7 @@ export const Skills: React.FC<SkillsProps> = ({
   const [newBadgeText, setNewBadgeText] = useState<{ [key: string]: string }>({});
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [uploadingCertId, setUploadingCertId] = useState<string | null>(null);
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -75,9 +79,23 @@ export const Skills: React.FC<SkillsProps> = ({
     }
   };
 
-  const handleCertificateImageUpload = (certId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCertificateImageUpload = async (certId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    setUploadingCertId(certId);
+
+    try {
+      const result = await uploadImageToSupabaseStorage(file, 'certificates');
+      if (result.url) {
+        const targetCert = certificates.find((c) => c.id === certId);
+        if (targetCert) {
+          onUpdateCertificate({ ...targetCert, imageUrl: result.url });
+        }
+      }
+    } catch (err: any) {
+      console.error('Upload certificate image error:', err);
+      // Fallback to local DataURL
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -88,6 +106,9 @@ export const Skills: React.FC<SkillsProps> = ({
         }
       };
       reader.readAsDataURL(file);
+    } finally {
+      setUploadingCertId(null);
+      e.target.value = '';
     }
   };
 
@@ -351,16 +372,23 @@ export const Skills: React.FC<SkillsProps> = ({
                           <span>Foto Sertifikat:</span>
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="py-1 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 text-[11px] font-mono flex items-center justify-center gap-1.5 cursor-pointer">
-                            <Upload className="w-3 h-3" />
-                            <span>Unggah Foto dari Perangkat</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleCertificateImageUpload(cert.id, e)}
-                              className="hidden"
-                            />
-                          </label>
+                          {uploadingCertId === cert.id ? (
+                            <div className="py-1 px-2.5 rounded-lg bg-sky-950 border border-sky-400 text-sky-300 text-[11px] font-mono flex items-center justify-center gap-1.5">
+                              <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
+                              <span>Mengunggah ke Cloud...</span>
+                            </div>
+                          ) : (
+                            <label className="py-1 px-2.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-300 text-[11px] font-mono flex items-center justify-center gap-1.5 cursor-pointer">
+                              <Upload className="w-3 h-3" />
+                              <span>Unggah Foto dari Perangkat</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleCertificateImageUpload(cert.id, e)}
+                                className="hidden"
+                              />
+                            </label>
+                          )}
                           <input
                             type="url"
                             placeholder="Atau input URL foto sertifikat..."
