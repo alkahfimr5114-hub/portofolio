@@ -21,39 +21,14 @@ export interface FullPortfolioData {
   projects?: Project[];
 }
 
-export const SUPABASE_URL = (
-  import.meta.env.VITE_SUPABASE_URL || 'https://xhzudsuwkvwgskgpvllk.supabase.co'
-).trim();
+export const SUPABASE_URL = "https://xhzudsuwkvwgskgpvllk.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_42ZVOj6RjARC8yayvM8vjw_B_oma7a0";
 
-export const SUPABASE_ANON_KEY = (
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_42ZVOj6RjARC8yayvM8vjw_B_oma7a0'
-).trim();
+export const isSupabaseConfigured = true;
 
-function isValidHttpUrl(urlStr: string): boolean {
-  try {
-    const parsed = new URL(urlStr);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-export const isSupabaseConfigured = Boolean(
-  SUPABASE_URL && 
-  SUPABASE_ANON_KEY && 
-  isValidHttpUrl(SUPABASE_URL)
-);
-
-export const supabase = (() => {
-  try {
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false },
-    });
-  } catch (e) {
-    console.warn('[Supabase] Init notice:', e);
-    return null;
-  }
-})();
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false },
+});
 
 const SETTINGS_ROW_ID = 'main';
 const TABLE_NAME = 'portfolio_settings';
@@ -120,26 +95,13 @@ export async function savePortfolioSettings(portfolioData: FullPortfolioData): P
     console.error('[Storage] Error saving to localStorage:', e);
   }
 
-  if (!supabase) {
-    return false;
-  }
-
   try {
-    // Upsert into portfolio_settings
+    // Upsert into portfolio_settings with { id: 'main', data }
     const { error } = await supabase
       .from(TABLE_NAME)
       .upsert({
         id: SETTINGS_ROW_ID,
         data: portfolioData,
-        personal_info: portfolioData.personalInfo,
-        profile_photo: portfolioData.profilePhoto,
-        education_list: portfolioData.educationList,
-        practical_experiences: portfolioData.practicalExperiences,
-        organization_experiences: portfolioData.organizationExperiences,
-        skill_groups: portfolioData.skillGroups,
-        certificates: portfolioData.certificates,
-        publication: portfolioData.publication,
-        updated_at: new Date().toISOString(),
       }, { onConflict: 'id' });
 
     if (error) {
