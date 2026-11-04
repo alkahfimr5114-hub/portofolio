@@ -1,7 +1,7 @@
 import { ExperienceItem, EducationItem, SkillCategoryItem, CertificateCardItem, PublicationItem } from '../types/pharmacy';
 
-// URL placeholder foto profil HTTPS publik yang valid (100% tampil di semua environment & build Vercel)
-export const PROFILE_PHOTO = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop';
+// Foto profil resmi apt. Andi Al Kahfi Akihito MR, S.Farm (Jas Praktik Apoteker)
+export const PROFILE_PHOTO = '/images/kahfi-profile.jpeg';
 
 export const PERSONAL_INFO = {
   name: 'apt. Andi Al Kahfi Akihito MR, S.Farm',

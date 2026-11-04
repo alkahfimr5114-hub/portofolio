@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowUp, Lock, Cloud, CloudUpload, Check } from 'lucide-react';
+import { ArrowUp, Lock, Cloud, CloudUpload, Check, Loader2 } from 'lucide-react';
 import { FuturisticBackground } from './components/FuturisticBackground';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -27,7 +27,8 @@ import {
   savePortfolioSettings, 
   subscribeToPortfolioChanges, 
   isSupabaseConfigured,
-  FullPortfolioData 
+  FullPortfolioData,
+  formatImageUrl 
 } from './lib/supabase';
 
 const DEFAULT_FALLBACK_IMAGES: Record<string, string> = {
@@ -204,7 +205,12 @@ function sanitizeCertificate(cert: any): CertificateCardItem {
 }
 
 function sanitizeProfilePhoto(photo: any): string {
-  if (!photo || typeof photo !== 'string' || photo.startsWith('/src/assets/')) {
+  if (
+    !photo || 
+    typeof photo !== 'string' || 
+    photo.startsWith('/src/assets/') || 
+    photo.includes('photo-1622253692010-333f2da6031d')
+  ) {
     return PROFILE_PHOTO;
   }
   return photo;
@@ -220,6 +226,28 @@ export default function App() {
 
   // START Gate state: User must click START on Landing screen to open the main portfolio
   const [hasEntered, setHasEntered] = useState<boolean>(false);
+
+  // Theme state: Default 'light' (Mode Cerah) unless explicitly set in localStorage
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('alkahfi_theme') as 'light' | 'dark') || 'light';
+  });
+
+  // Sync Theme with document.documentElement and localStorage
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    } else {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('alkahfi_theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   // Editable content state unlocked via PIN 261026
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -363,8 +391,11 @@ export default function App() {
     return SCIENTIFIC_PUBLICATION;
   });
 
-  // Cloud Sync state
+  // Cloud Sync state & Critical Protection against visitor device overwrites
+  const [isCloudLoaded, setIsCloudLoaded] = useState<boolean>(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [isManualSaving, setIsManualSaving] = useState<boolean>(false);
+  const [manualSaveMessage, setManualSaveMessage] = useState<string | null>(null);
   const isInitialMount = useRef(true);
 
   // 1. Initial Cloud Sync from Supabase on load & Real-time subscription
@@ -372,26 +403,31 @@ export default function App() {
     let isMounted = true;
 
     const loadFromCloud = async () => {
-      if (!isSupabaseConfigured) return;
       setCloudSyncStatus('syncing');
       try {
-        const cloudData = await fetchPortfolioSettings();
-        if (cloudData && isMounted) {
-          if (cloudData.personalInfo) setPersonalInfo(cloudData.personalInfo);
-          if (cloudData.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(cloudData.profilePhoto));
-          if (cloudData.educationList) setEducationList(cloudData.educationList);
-          if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(mergeWithDefaultPracticalExperience));
-          if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(mergeWithDefaultOrgExperience));
-          if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
-          if (cloudData.certificates) setCertificates(cloudData.certificates.map(sanitizeCertificate));
-          if (cloudData.publication) setPublication(cloudData.publication);
-          setCloudSyncStatus('synced');
-        } else {
-          setCloudSyncStatus('idle');
+        if (isSupabaseConfigured) {
+          const cloudData = await fetchPortfolioSettings();
+          if (cloudData && isMounted) {
+            if (cloudData.personalInfo) setPersonalInfo(cloudData.personalInfo);
+            if (cloudData.profilePhoto) setProfilePhoto(sanitizeProfilePhoto(cloudData.profilePhoto));
+            if (cloudData.educationList) setEducationList(cloudData.educationList);
+            if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(mergeWithDefaultPracticalExperience));
+            if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(mergeWithDefaultOrgExperience));
+            if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
+            if (cloudData.certificates) setCertificates(cloudData.certificates.map(sanitizeCertificate));
+            if (cloudData.publication) setPublication(cloudData.publication);
+            setCloudSyncStatus('synced');
+          } else {
+            setCloudSyncStatus('idle');
+          }
         }
       } catch (e) {
         console.warn('[Cloud Sync] Initial load notice:', e);
         if (isMounted) setCloudSyncStatus('idle');
+      } finally {
+        if (isMounted) {
+          setIsCloudLoaded(true);
+        }
       }
     };
 
@@ -418,7 +454,13 @@ export default function App() {
   }, []);
 
   // 3. Centralized Auto-save to Supabase & localStorage whenever portfolio state changes
+  // CRITICAL: NEVER auto-save before isCloudLoaded is TRUE AND only save when isEditMode is TRUE!
+  // This completely stops visitor devices (HP/public users) from wiping cloud data with defaults!
   useEffect(() => {
+    if (!isCloudLoaded || !isEditMode) {
+      return;
+    }
+
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -444,6 +486,8 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [
+    isCloudLoaded,
+    isEditMode,
     personalInfo,
     profilePhoto,
     educationList,
@@ -453,6 +497,57 @@ export default function App() {
     certificates,
     publication,
   ]);
+
+  // 4. Manual "Simpan Permanen ke Cloud" Handler for Admin
+  const handleManualSaveToCloud = async () => {
+    setIsManualSaving(true);
+    setCloudSyncStatus('syncing');
+
+    const payload: FullPortfolioData = {
+      personalInfo,
+      profilePhoto: formatImageUrl(profilePhoto),
+      educationList,
+      practicalExperiences: practicalExperiences.map(item => ({
+        ...item,
+        image: item.image ? formatImageUrl(item.image) : item.image,
+        galleryPhotos: (item.galleryPhotos || []).map(p => ({
+          ...p,
+          url: p.url ? formatImageUrl(p.url) : '',
+        })),
+      })),
+      organizationExperiences: organizationExperiences.map(item => ({
+        ...item,
+        image: item.image ? formatImageUrl(item.image) : item.image,
+        galleryPhotos: (item.galleryPhotos || []).map(p => ({
+          ...p,
+          url: p.url ? formatImageUrl(p.url) : '',
+        })),
+      })),
+      skillGroups,
+      certificates: certificates.map(c => ({
+        ...c,
+        imageUrl: c.imageUrl ? formatImageUrl(c.imageUrl) : c.imageUrl,
+      })),
+      publication,
+    };
+
+    try {
+      const ok = await savePortfolioSettings(payload);
+      if (ok) {
+        setCloudSyncStatus('synced');
+        setManualSaveMessage('Tersimpan di semua perangkat!');
+      } else {
+        setCloudSyncStatus('synced');
+        setManualSaveMessage('Tersimpan di perangkat lokal!');
+      }
+    } catch (err) {
+      console.error('[Manual Save Error]:', err);
+      setManualSaveMessage('Tersimpan di perangkat lokal.');
+    } finally {
+      setIsManualSaving(false);
+      setTimeout(() => setManualSaveMessage(null), 3500);
+    }
+  };
 
   // START / Masuk Portofolio handler
   const handleStartPortfolio = () => {
@@ -467,8 +562,9 @@ export default function App() {
 
   // Update Profile Photo
   const handleUpdateProfilePhoto = (newPhoto: string) => {
-    setProfilePhoto(newPhoto);
-    localStorage.setItem('alkahfi_profile_photo', newPhoto);
+    const formatted = formatImageUrl(newPhoto);
+    setProfilePhoto(formatted);
+    localStorage.setItem('alkahfi_profile_photo', formatted);
   };
 
   // Update Personal Info
@@ -671,7 +767,7 @@ export default function App() {
       issuer: 'Instansi / Lembaga Penerbit',
       date: '2026',
       description: 'Deskripsi singkat sertifikasi kompetensi atau pelatihan kefarmasian.',
-      imageUrl: '/src/assets/images/pharmacist_portrait_1793688651919.jpg',
+      imageUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop',
       certificateUrl: 'https://'
     };
     const updated = [newCert, ...certificates];
@@ -680,7 +776,11 @@ export default function App() {
   };
 
   const handleUpdateCertificate = (updatedItem: CertificateCardItem) => {
-    const updated = certificates.map((c) => (c.id === updatedItem.id ? updatedItem : c));
+    const formattedItem: CertificateCardItem = {
+      ...updatedItem,
+      imageUrl: updatedItem.imageUrl ? formatImageUrl(updatedItem.imageUrl) : updatedItem.imageUrl,
+    };
+    const updated = certificates.map((c) => (c.id === formattedItem.id ? formattedItem : c));
     setCertificates(updated);
     localStorage.setItem('alkahfi_certificates', JSON.stringify(updated));
   };
@@ -770,7 +870,7 @@ export default function App() {
   const allExperiences = [...practicalExperiences, ...organizationExperiences];
 
   return (
-    <div className="min-h-screen relative font-['Plus_Jakarta_Sans'] bg-black text-slate-100 selection:bg-sky-400 selection:text-black">
+    <div className="min-h-screen relative font-['Plus_Jakarta_Sans'] bg-slate-50 text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-300 selection:bg-sky-400 selection:text-black">
       
       {/* Top Scroll Progress Indicator */}
       <div
@@ -807,9 +907,26 @@ export default function App() {
           <span className="text-xs font-mono font-bold text-amber-300 sm:hidden">
             {isSupabaseConfigured ? 'Admin · Supabase' : 'Admin Aktif'}
           </span>
+          {/* Tombol Simpan Permanen ke Cloud */}
+          <button
+            onClick={handleManualSaveToCloud}
+            disabled={isManualSaving}
+            className="ml-2 px-3.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(16,185,129,0.5)] cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
+            title="Simpan data saat ini secara permanen ke Supabase Cloud"
+          >
+            {isManualSaving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : manualSaveMessage ? (
+              <Check className="w-3.5 h-3.5 text-white" />
+            ) : (
+              <CloudUpload className="w-3.5 h-3.5" />
+            )}
+            <span>{manualSaveMessage || 'Simpan Permanen ke Cloud'}</span>
+          </button>
+
           <button
             onClick={() => setIsEditMode(false)}
-            className="ml-2 px-3 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(239,68,68,0.5)] cursor-pointer hover:scale-105 active:scale-95"
+            className="ml-1 px-3 py-1 rounded-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(239,68,68,0.5)] cursor-pointer hover:scale-105 active:scale-95"
             title="Kunci & Keluar dari mode admin"
           >
             <Lock className="w-3.5 h-3.5" />
@@ -818,12 +935,14 @@ export default function App() {
         </aside>
       )}
 
-      {/* Futuristic Pill Navbar */}
+      {/* Futuristic Pill Navbar with Theme Mode Props */}
       <Navbar
         activeSection={activeSection}
         onNavigate={handleNavigate}
         onOpenCV={() => setIsCVOpen(true)}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content Layout */}
@@ -913,6 +1032,7 @@ export default function App() {
       <CVModal
         isOpen={isCVOpen}
         onClose={() => setIsCVOpen(false)}
+        profilePhoto={profilePhoto}
       />
 
       {/* Admin Verification Modal (PIN 261026) Triggered only by dot in Portfolio */}

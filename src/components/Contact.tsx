@@ -35,7 +35,7 @@ export const Contact: React.FC<ContactProps> = ({
 
       {/* Section Header: Hanya "Kontak Person" */}
       <div className="mb-10 text-center md:text-left">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-white">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
           Kontak Person
         </h2>
       </div>
@@ -49,12 +49,12 @@ export const Contact: React.FC<ContactProps> = ({
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-4">
-            {/* Header: Logo/Ikon dan Judul "WhatsApp" BERADA DI SAMPING (horizontal flex-row) */}
+            {/* Header: Logo/Ikon dan Judul "WhatsApp" BERADA DI SAMPING */}
             <div className="flex items-center gap-4">
-              <div className="w-13 h-13 rounded-2xl bg-emerald-950/90 border border-emerald-500/50 text-emerald-400 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.35)] group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className="w-13 h-13 rounded-2xl bg-emerald-100 dark:bg-emerald-950/90 border border-emerald-300 dark:border-emerald-500/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300 shrink-0">
                 <MessageSquare className="w-6 h-6" />
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-white group-hover:text-emerald-300 transition-colors">
+              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
                 WhatsApp
               </h3>
             </div>
@@ -62,7 +62,7 @@ export const Contact: React.FC<ContactProps> = ({
             {/* Input Edit khusus Admin Mode */}
             {isEditMode && (
               <div className="space-y-1 pt-1 text-left">
-                <label className="text-[10px] font-mono text-amber-300 block">Edit Nomor WhatsApp:</label>
+                <label className="text-[10px] font-mono text-amber-500 dark:text-amber-300 block">Edit Nomor WhatsApp:</label>
                 <input
                   type="text"
                   value={personalInfo.whatsapp}
@@ -71,7 +71,7 @@ export const Contact: React.FC<ContactProps> = ({
                     whatsapp: e.target.value,
                     whatsappUrl: `https://wa.me/${e.target.value.replace(/\D/g, '')}`
                   })}
-                  className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-400 text-xs font-mono text-white focus:outline-none"
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
             )}
@@ -98,12 +98,12 @@ export const Contact: React.FC<ContactProps> = ({
           <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-4">
-            {/* Header: Logo/Ikon dan Judul "Gmail" BERADA DI SAMPING (horizontal flex-row) */}
+            {/* Header: Logo/Ikon dan Judul "Gmail" BERADA DI SAMPING */}
             <div className="flex items-center gap-4">
-              <div className="w-13 h-13 rounded-2xl bg-sky-950/90 border border-sky-500/50 text-sky-400 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.35)] group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className="w-13 h-13 rounded-2xl bg-sky-100 dark:bg-sky-950/90 border border-sky-300 dark:border-sky-500/50 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300 shrink-0">
                 <Mail className="w-6 h-6" />
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-white group-hover:text-sky-300 transition-colors">
+              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
                 Gmail
               </h3>
             </div>
@@ -111,12 +111,12 @@ export const Contact: React.FC<ContactProps> = ({
             {/* Input Edit khusus Admin Mode */}
             {isEditMode && (
               <div className="space-y-1 pt-1 text-left">
-                <label className="text-[10px] font-mono text-amber-300 block">Edit Alamat Email:</label>
+                <label className="text-[10px] font-mono text-amber-500 dark:text-amber-300 block">Edit Alamat Email:</label>
                 <input
                   type="email"
                   value={personalInfo.email}
                   onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, email: e.target.value })}
-                  className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-400 text-xs font-mono text-white focus:outline-none"
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
             )}
@@ -141,12 +141,12 @@ export const Contact: React.FC<ContactProps> = ({
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-4">
-            {/* Header: Logo/Ikon dan Judul "LinkedIn" BERADA DI SAMPING (horizontal flex-row) */}
+            {/* Header: Logo/Ikon dan Judul "LinkedIn" BERADA DI SAMPING */}
             <div className="flex items-center gap-4">
-              <div className="w-13 h-13 rounded-2xl bg-blue-950/90 border border-blue-500/50 text-blue-400 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.35)] group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className="w-13 h-13 rounded-2xl bg-blue-100 dark:bg-blue-950/90 border border-blue-300 dark:border-blue-500/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300 shrink-0">
                 <Linkedin className="w-6 h-6" />
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-white group-hover:text-blue-300 transition-colors">
+              <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
                 LinkedIn
               </h3>
             </div>
@@ -154,7 +154,7 @@ export const Contact: React.FC<ContactProps> = ({
             {/* Input Edit khusus Admin Mode */}
             {isEditMode && (
               <div className="space-y-1 pt-1 text-left">
-                <label className="text-[10px] font-mono text-amber-300 block">Edit Tautan LinkedIn:</label>
+                <label className="text-[10px] font-mono text-amber-500 dark:text-amber-300 block">Edit Tautan LinkedIn:</label>
                 <input
                   type="text"
                   value={personalInfo.linkedin}
@@ -163,7 +163,7 @@ export const Contact: React.FC<ContactProps> = ({
                     linkedin: e.target.value,
                     linkedinUrl: e.target.value.startsWith('http') ? e.target.value : `https://${e.target.value}`
                   })}
-                  className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-400 text-xs font-mono text-white focus:outline-none"
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
             )}
@@ -187,12 +187,12 @@ export const Contact: React.FC<ContactProps> = ({
       </div>
 
       {/* Domisili Information Card: Bersih hanya Makassar, Sulawesi Selatan */}
-      <div className="p-5 sm:p-6 rounded-3xl glass-futuristic-card border border-white/10 flex items-center gap-4 max-w-2xl">
-        <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-white/20 text-sky-400 flex items-center justify-center shrink-0">
+      <div className="p-5 sm:p-6 rounded-3xl glass-futuristic-card border border-slate-200 dark:border-white/10 flex items-center gap-4 max-w-2xl">
+        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
           <MapPin className="w-6 h-6" />
         </div>
         <div className="text-left">
-          <div className="text-xs font-mono text-slate-400 uppercase tracking-wider">
+          <div className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Domisili
           </div>
           {isEditMode ? (
@@ -200,10 +200,10 @@ export const Contact: React.FC<ContactProps> = ({
               type="text"
               value={personalInfo.location}
               onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, location: e.target.value })}
-              className="mt-1 px-3 py-1 rounded-lg bg-slate-900 border border-amber-400 text-xs text-white focus:outline-none"
+              className="mt-1 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs text-slate-900 dark:text-white focus:outline-none"
             />
           ) : (
-            <div className="text-base sm:text-lg font-bold text-white font-['Outfit'] mt-0.5">
+            <div className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-['Outfit'] mt-0.5 transition-colors">
               {personalInfo.location || 'Makassar, Sulawesi Selatan'}
             </div>
           )}

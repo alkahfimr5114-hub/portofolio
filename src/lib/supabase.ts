@@ -204,13 +204,37 @@ export interface StorageUploadResult {
 }
 
 /**
- * Compresses an image file using an HTML5 Canvas to max width 800px, JPEG quality 0.7.
- * Returns a lightweight, high-performance base64 data URL.
+ * Automatically converts Google Drive share links to high-resolution direct image URLs
+ * that bypass browser CORS restrictions (https://lh3.googleusercontent.com/d/ID=w1000).
+ */
+export function formatImageUrl(url: string): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // Google Drive file link: /file/d/ID/view or /file/d/ID
+  const driveFileMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  if (driveFileMatch && driveFileMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}=w1000`;
+  }
+
+  // Google Drive url parameter: /open?id=ID or /uc?id=ID or &id=ID
+  const driveIdMatch = trimmed.match(/drive\.google\.com\/(?:open|uc)\?(?:[^&]*&)*id=([a-zA-Z0-9_-]+)/i);
+  if (driveIdMatch && driveIdMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}=w1000`;
+  }
+
+  return trimmed;
+}
+
+/**
+ * Compresses an image file using an HTML5 Canvas to max dimension 900px, JPEG quality 0.75.
+ * Yields an ultra-lightweight (<150KB), high-performance image suitable for JSONB or Storage.
  */
 export function compressImageWithCanvas(
   file: File,
-  maxWidth: number = 800,
-  quality: number = 0.7
+  maxDimension: number = 900,
+  quality: number = 0.75
 ): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -220,9 +244,14 @@ export function compressImageWithCanvas(
         let width = img.width;
         let height = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
         }
 
         const canvas = document.createElement('canvas');
@@ -235,6 +264,8 @@ export function compressImageWithCanvas(
           return;
         }
 
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(dataUrl);
@@ -251,26 +282,54 @@ export function compressImageWithCanvas(
 
 /**
  * Upload an image file to Supabase Storage bucket 'portfolio-images'.
- * Uses format: `${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
- * Automatically retrieves the public URL for permanent cloud access.
- * If cloud upload fails or bucket is unavailable, safely falls back to Canvas compression (max 800px, quality 0.7)
- * so user edits are preserved without interruption and save cleanly to Supabase portfolio_settings.
+ * 1. Client-side Canvas compression (max 900px, image/jpeg, 0.75 quality, <150KB).
+ * 2. Uploads compressed blob to Supabase Storage bucket 'portfolio-images'.
+ * 3. If storage upload succeeds, returns publicUrl.
+ * 4. If storage bucket fails or restricted, returns compressed Canvas data URL,
+ *    ensuring 100% permanent persistence in Supabase portfolio_settings JSONB.
  */
 export async function uploadImageToSupabaseStorage(
   file: File,
   folder: string = 'general'
 ): Promise<StorageUploadResult> {
-  const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-  const filePath = `${folder}/${Date.now()}-${cleanName}`;
+  const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9.]/g, '_');
+  const filePath = `${folder}/${Date.now()}-${cleanName}.jpg`;
 
+  // a. Client-side compression
+  let compressedDataUrl = '';
+  try {
+    compressedDataUrl = await compressImageWithCanvas(file, 900, 0.75);
+  } catch (err) {
+    console.warn('[Canvas] Compression notice:', err);
+  }
+
+  // Convert compressed dataUrl to Blob
+  let blobToUpload: Blob | null = null;
+  if (compressedDataUrl && compressedDataUrl.startsWith('data:image/jpeg;base64,')) {
+    try {
+      const base64Data = compressedDataUrl.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      blobToUpload = new Blob([byteArray], { type: 'image/jpeg' });
+    } catch (e) {
+      console.warn('[Blob conversion notice]:', e);
+    }
+  }
+
+  // b. Try Supabase Storage upload
   if (supabase) {
     try {
+      const uploadTarget = blobToUpload || file;
       const { data, error } = await supabase.storage
         .from(BUCKET_NAME)
-        .upload(filePath, file, {
+        .upload(filePath, uploadTarget, {
           cacheControl: '3600',
           upsert: true,
-          contentType: file.type || 'image/jpeg',
+          contentType: 'image/jpeg',
         });
 
       if (!error && data?.path) {
@@ -280,38 +339,22 @@ export async function uploadImageToSupabaseStorage(
 
         if (publicUrl) {
           return {
-            url: publicUrl,
+            url: formatImageUrl(publicUrl),
             isCloud: true,
           };
         }
       } else if (error) {
-        console.warn('[Supabase Storage] Upload notice:', error.message);
+        console.warn('[Supabase Storage] Notice:', error.message);
       }
     } catch (err: any) {
-      console.warn('[Supabase Storage] Upload exception:', err);
+      console.warn('[Supabase Storage] Exception:', err);
     }
   }
 
-  // Fallback to Canvas compression (max 800px, quality 0.7 JPEG base64 DataURL)
-  try {
-    const compressedUrl = await compressImageWithCanvas(file, 800, 0.7);
-    return {
-      url: compressedUrl,
-      isCloud: false,
-      error: 'Foto dikompresi & disimpan ke database portfolio_settings (Storage bucket belum aktif).',
-    };
-  } catch (canvasErr) {
-    console.warn('[Canvas Compression] Fallback to raw DataURL:', canvasErr);
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        resolve({
-          url: (e.target?.result as string) || '',
-          isCloud: false,
-        });
-      };
-      reader.onerror = () => resolve({ url: '', isCloud: false });
-      reader.readAsDataURL(file);
-    });
-  }
+  // c. Return lightweight Canvas dataUrl (<150KB) for permanent JSONB database storage
+  return {
+    url: compressedDataUrl || '',
+    isCloud: false,
+    error: 'Disimpan via kompresi database portfolio_settings (Storage bucket belum aktif).',
+  };
 }

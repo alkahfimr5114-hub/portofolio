@@ -46,12 +46,12 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-400">
-              <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
+              <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
               <span>PKPA Works & Praktik Profesi Apoteker</span>
             </div>
             <div className="flex flex-wrap items-center gap-4">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-white">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
                 Pengalaman Praktik Kefarmasian
               </h2>
               {isEditMode && onAddPractical && (
@@ -64,13 +64,13 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 </button>
               )}
             </div>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
               Setiap kartu memiliki Halaman Detail tersendiri dengan rincian tugas komprehensif, kepatuhan regulasi, serta Galeri Dokumentasi Foto PKPA.
             </p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-full bg-slate-950/80 border border-white/15 backdrop-blur-md self-start md:self-auto">
+          <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-950/80 border border-slate-300 dark:border-white/15 backdrop-blur-md self-start md:self-auto transition-colors">
             {filterTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -78,7 +78,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                   selectedFilter === tab.id
                     ? 'pill-badge-active font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-300/40 dark:hover:bg-white/5'
                 }`}
               >
                 {tab.label}
@@ -131,67 +131,71 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
 
               <div className="space-y-4">
                 
-                {/* Instansi Pill Badge (Sesuai Referensi Gambar) */}
-                <div className="pb-3 border-b border-white/10 pr-8">
-                  <span className="pill-badge text-[11px] font-mono font-bold text-sky-300 border-sky-400/40 bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.25)] block truncate text-center">
+                {/* Instansi Pill Badge */}
+                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-8">
+                  <span className="pill-badge text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/40 bg-sky-50 dark:bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.15)] block truncate text-center">
                     {exp.badgeLabel}
                   </span>
                 </div>
 
-                {/* Pratinjau Foto Luar: Tampilkan foto pertama dari galeri sebagai cover thumbnail (h-40 object-cover rounded-xl). Sembunyikan jika foto 0. */}
-                {(exp.galleryPhotos || []).length > 0 && exp.galleryPhotos?.[0]?.url ? (
-                  <div className="w-full h-40 rounded-xl overflow-hidden bg-black/60 relative border border-white/10 group-hover:border-sky-400/40 transition-colors">
-                    <img
-                      src={exp.galleryPhotos[0].url}
-                      alt={exp.galleryPhotos[0].caption || exp.institution}
-                      className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
-                    <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
-                      <ImageIcon className="w-3 h-3 text-sky-400" />
-                      <span>{(exp.galleryPhotos || []).length} Foto</span>
-                    </span>
-                  </div>
-                ) : null}
+                {/* Pratinjau Foto Luar */}
+                {(() => {
+                  const coverUrl = exp.galleryPhotos?.[0]?.url || exp.image;
+                  if (!coverUrl) return null;
+                  return (
+                    <div className="w-full h-40 rounded-xl overflow-hidden bg-slate-900/60 relative border border-slate-200 dark:border-white/10 group-hover:border-sky-400/40 transition-colors">
+                      <img
+                        src={coverUrl}
+                        alt={exp.galleryPhotos?.[0]?.caption || exp.institution}
+                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
+                      <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
+                        <ImageIcon className="w-3 h-3 text-sky-400" />
+                        <span>{(exp.galleryPhotos || []).length > 0 ? `${(exp.galleryPhotos || []).length} Foto` : '1 Foto'}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Institution Name */}
-                <h3 className="text-lg sm:text-xl font-bold font-['Outfit'] text-white group-hover:text-sky-300 transition-colors leading-snug">
+                <h3 className="text-lg sm:text-xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors leading-snug">
                   {exp.institution}
                 </h3>
 
                 {/* Role and Period */}
-                <div className="text-xs sm:text-sm font-semibold text-slate-300 flex items-center justify-between">
+                <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between transition-colors">
                   <span className="truncate">{exp.role}</span>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-                  <span className="flex items-center gap-1 text-sky-400">
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
                     <Calendar className="w-3.5 h-3.5" />
                     {exp.period}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     {exp.location}
                   </span>
                 </div>
 
                 {/* Photo Gallery count badge */}
-                <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-slate-400">
-                  <span className="flex items-center gap-1 text-slate-300">
-                    <ImageIcon className="w-3.5 h-3.5 text-sky-400" />
+                <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                    <ImageIcon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                     {(exp.galleryPhotos || []).length} Foto Dokumentasi
                   </span>
                   <span aria-hidden="true">·</span>
-                  <span className="text-slate-400 truncate">{exp.categoryLabel}</span>
+                  <span className="text-slate-500 dark:text-slate-400 truncate">{exp.categoryLabel}</span>
                 </div>
 
               </div>
 
               {/* Card Footer Callout */}
-              <div className="pt-5 mt-5 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-slate-400">
+              <div className="pt-5 mt-5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                   Klik Buka Detail
                 </span>
                 
@@ -213,11 +217,11 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
         {/* Section Header */}
         <div className="space-y-3 mb-10">
           <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-400">
-            <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
-            <span>Kepemimpinan & Asistensi Laboratorium</span>
+            <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
+            <span className="text-sky-600 dark:text-sky-400">Kepemimpinan & Asistensi Laboratorium</span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
               Pengalaman Organisasi & Akademik
             </h2>
             {isEditMode && onAddOrganization && (
@@ -230,7 +234,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               </button>
             )}
           </div>
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
             Peran kepemimpinan dalam bimbingan ratusan praktikan laboratorium mikrobiologi dan diplomasi kemitraan antarkampus farmasi.
           </p>
         </div>
@@ -241,7 +245,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
             <div
               key={org.id}
               onClick={() => onSelectExperience(org)}
-              className="group glass-futuristic-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl"
+              className="group glass-futuristic-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-slate-200 dark:border-white/15 hover:border-sky-500/60 shadow-xl"
             >
               {/* Admin edit & delete buttons on card */}
               {isEditMode && (
@@ -280,40 +284,44 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               <div className="space-y-4">
                 
                 {/* Badge Instansi */}
-                <div className="pb-3 border-b border-white/10 pr-8">
-                  <span className="pill-badge text-[11px] font-mono font-bold text-sky-300 border-sky-400/40 bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.25)] block truncate text-center">
+                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-8">
+                  <span className="pill-badge text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/40 bg-sky-50 dark:bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.15)] block truncate text-center">
                     {org.badgeLabel}
                   </span>
                 </div>
 
                 {/* Pratinjau Foto Luar jika ada foto */}
-                {(org.galleryPhotos || []).length > 0 && org.galleryPhotos?.[0]?.url ? (
-                  <div className="w-full h-40 rounded-xl overflow-hidden bg-black/60 relative border border-white/10 group-hover:border-sky-400/40 transition-colors">
-                    <img
-                      src={org.galleryPhotos[0].url}
-                      alt={org.galleryPhotos[0].caption || org.institution}
-                      className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
-                    <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
-                      <ImageIcon className="w-3 h-3 text-sky-400" />
-                      <span>{(org.galleryPhotos || []).length} Foto</span>
-                    </span>
-                  </div>
-                ) : null}
+                {(() => {
+                  const coverUrl = org.galleryPhotos?.[0]?.url || org.image;
+                  if (!coverUrl) return null;
+                  return (
+                    <div className="w-full h-40 rounded-xl overflow-hidden bg-slate-900/60 relative border border-slate-200 dark:border-white/10 group-hover:border-sky-400/40 transition-colors">
+                      <img
+                        src={coverUrl}
+                        alt={org.galleryPhotos?.[0]?.caption || org.institution}
+                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
+                      <span className="absolute bottom-2.5 right-2.5 pill-badge text-[10px] font-mono bg-black/85 text-sky-300 border-sky-400/40 px-2 py-0.5 flex items-center gap-1 backdrop-blur-md">
+                        <ImageIcon className="w-3 h-3 text-sky-400" />
+                        <span>{(org.galleryPhotos || []).length > 0 ? `${(org.galleryPhotos || []).length} Foto` : '1 Foto'}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Institution */}
-                <h3 className="text-xl font-bold font-['Outfit'] text-white group-hover:text-sky-300 transition-colors">
+                <h3 className="text-xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
                   {org.institution}
                 </h3>
 
-                <div className="text-sm font-semibold text-slate-300 flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between transition-colors">
                   <span>{org.role}</span>
-                  <span className="font-mono text-xs text-sky-400">{org.period}</span>
+                  <span className="font-mono text-xs text-sky-600 dark:text-sky-400">{org.period}</span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed transition-colors">
                   {org.shortSummary}
                 </p>
 
@@ -322,7 +330,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                   {(org.competencies || []).map((comp, idx) => (
                     <span
                       key={idx}
-                      className="text-[11px] font-mono text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-900 border border-white/10"
+                      className="text-[11px] font-mono text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/10"
                     >
                       {comp}
                     </span>
@@ -332,9 +340,9 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               </div>
 
               {/* Action */}
-              <div className="pt-5 mt-5 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-sky-400" />
+              <div className="pt-5 mt-5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                   Bimbingan & Humas
                 </span>
 

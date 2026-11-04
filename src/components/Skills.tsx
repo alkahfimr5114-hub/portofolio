@@ -16,7 +16,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { SkillCategoryItem, CertificateCardItem } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
 
 interface SkillsProps {
   isEditMode?: boolean;
@@ -87,9 +87,9 @@ export const Skills: React.FC<SkillsProps> = ({
 
     try {
       const result = await uploadImageToSupabaseStorage(file, 'certificates');
-      let finalUrl = result.url;
+      let finalUrl = result.url ? formatImageUrl(result.url) : '';
       if (!finalUrl) {
-        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+        finalUrl = await compressImageWithCanvas(file, 900, 0.75);
       }
       if (finalUrl) {
         const targetCert = certificates.find((c) => c.id === certId);
@@ -100,7 +100,7 @@ export const Skills: React.FC<SkillsProps> = ({
     } catch (err: any) {
       console.error('Upload certificate image error:', err);
       try {
-        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        const fallbackUrl = await compressImageWithCanvas(file, 900, 0.75);
         if (fallbackUrl) {
           const targetCert = certificates.find((c) => c.id === certId);
           if (targetCert) {
@@ -138,12 +138,12 @@ export const Skills: React.FC<SkillsProps> = ({
 
       {/* Section Header */}
       <div className="space-y-3 mb-10">
-        <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-400">
-          <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
+        <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
+          <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
           <span>Tools, Laboratorium & Sertifikasi</span>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-white">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
             Keahlian & Sertifikasi
           </h2>
           {isEditMode && onAddCategory && (
@@ -164,7 +164,7 @@ export const Skills: React.FC<SkillsProps> = ({
               placeholder="Nama Kategori Baru..."
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-amber-400 text-xs text-white"
+              className="flex-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs text-slate-900 dark:text-white"
             />
             <button
               type="submit"
@@ -187,7 +187,7 @@ export const Skills: React.FC<SkillsProps> = ({
               className={`pill-badge text-xs sm:text-sm py-2 px-5 cursor-pointer transition-all ${
                 isActive
                   ? 'pill-badge-active font-bold text-white shadow-[0_0_20px_rgba(0,112,243,0.4)]'
-                  : 'text-slate-300 hover:text-white hover:border-white/40'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/40'
               }`}
             >
               {tab.icon && <span className="mr-2 inline-flex items-center">{getIcon(tab.icon)}</span>}
@@ -226,21 +226,21 @@ export const Skills: React.FC<SkillsProps> = ({
 
                   <div className="space-y-4">
                     {/* Category Header: Tanpa Indikator Jumlah Item & Tanpa Subtitle Penjelasan */}
-                    <div className="flex items-center gap-3 pb-3 border-b border-white/10 pr-8">
-                      <div className="p-2.5 rounded-2xl bg-sky-950/70 border border-sky-400/40 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.25)]">
+                    <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-white/10 pr-8">
+                      <div className="p-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-400/40 text-sky-600 dark:text-sky-400 shadow-sm">
                         {getIcon(group.icon)}
                       </div>
-                      <h3 className="text-xl font-bold font-['Outfit'] text-white">
+                      <h3 className="text-xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
                         {group.title}
                       </h3>
                     </div>
 
-                    {/* Simple Collection of Badge/Tag Pills (Standar Mandiri Tanpa Persentase/Level) */}
+                    {/* Simple Collection of Badge/Tag Pills */}
                     <div className="flex flex-wrap gap-2.5 pt-1">
                       {group.items.map((item, idx) => (
                         <span
                           key={idx}
-                          className="group/badge relative pill-tag-badge text-xs sm:text-sm py-2 px-3.5 bg-slate-900/90 border-white/20 text-slate-100 hover:border-sky-400 hover:text-white transition-all shadow-sm select-none inline-flex items-center gap-1.5"
+                          className="group/badge relative pill-tag-badge text-xs sm:text-sm py-2 px-3.5 transition-all select-none inline-flex items-center gap-1.5"
                         >
                           <span>{item.name}</span>
                           {isEditMode && (
@@ -287,16 +287,16 @@ export const Skills: React.FC<SkillsProps> = ({
         {/* 2. BAGIAN SERTIFIKASI SEBAGAI SISTEM KARTU INDEPENDEN (CRUD LENGKAP & URL KUSTOM EKSTERNAL) */}
         {showCertificates && (
           <div className="space-y-6 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-white/10 transition-colors">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-sky-950/70 border border-sky-400/40 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.25)]">
+                <div className="p-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-400/40 text-sky-600 dark:text-sky-400 shadow-sm">
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-white">
+                  <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
                     Sertifikasi & Kredensial Profesi
                   </h3>
-                  <p className="text-xs text-slate-400 font-mono mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                     Kartu sertifikasi terverifikasi dengan tautan resmi ke dokumen asli.
                   </p>
                 </div>
@@ -319,7 +319,7 @@ export const Skills: React.FC<SkillsProps> = ({
               {(certificates || []).map((cert) => (
                 <div
                   key={cert.id}
-                  className="group relative rounded-3xl glass-futuristic-card p-6 border border-white/15 hover:border-sky-400/60 transition-all duration-300 flex flex-col justify-between shadow-xl hover:-translate-y-1.5"
+                  className="group relative rounded-3xl glass-futuristic-card p-6 border border-slate-200 dark:border-white/15 hover:border-sky-500/60 transition-all duration-300 flex flex-col justify-between shadow-xl hover:-translate-y-1.5"
                 >
                   {/* Delete button in admin mode */}
                   {isEditMode && (
@@ -400,9 +400,9 @@ export const Skills: React.FC<SkillsProps> = ({
                           )}
                           <input
                             type="url"
-                            placeholder="Atau input URL foto sertifikat..."
+                            placeholder="Atau input URL foto sertifikat (Google Drive / HTTPS)..."
                             value={cert.imageUrl || ''}
-                            onChange={(e) => onUpdateCertificate({ ...cert, imageUrl: e.target.value })}
+                            onChange={(e) => onUpdateCertificate({ ...cert, imageUrl: formatImageUrl(e.target.value) })}
                             className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-white"
                           />
                         </div>
@@ -463,19 +463,19 @@ export const Skills: React.FC<SkillsProps> = ({
                       </div>
                     ) : (
                       <div className="space-y-2 text-left">
-                        <h4 className="text-base sm:text-lg font-bold font-['Outfit'] text-white group-hover:text-sky-300 transition-colors leading-snug">
+                        <h4 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors leading-snug">
                           {cert.title}
                         </h4>
                         
-                        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-300">
-                          <span className="flex items-center gap-1 text-sky-400">
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300">
+                          <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
                             <Building2 className="w-3.5 h-3.5" />
                             {cert.issuer}
                           </span>
                           {cert.date && (
                             <>
                               <span aria-hidden="true">·</span>
-                              <span className="flex items-center gap-1 text-slate-400">
+                              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                                 <Calendar className="w-3 h-3" />
                                 {cert.date}
                               </span>
@@ -484,7 +484,7 @@ export const Skills: React.FC<SkillsProps> = ({
                         </div>
 
                         {cert.description && (
-                          <p className="text-xs text-slate-300 leading-relaxed pt-1">
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
                             {cert.description}
                           </p>
                         )}
@@ -493,15 +493,15 @@ export const Skills: React.FC<SkillsProps> = ({
                   </div>
 
                   {/* Tombol Tautan Eksternal ke Sertifikat Asli */}
-                  <div className="pt-5 mt-4 border-t border-white/10">
+                  <div className="pt-5 mt-4 border-t border-slate-200 dark:border-white/10">
                     {cert.certificateUrl ? (
                       <a
                         href={cert.certificateUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full group/btn relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-sky-500 border border-white/20 hover:border-sky-400 text-slate-200 hover:text-black font-bold text-xs tracking-wide transition-all duration-300 cursor-pointer shadow-md"
+                        className="w-full group/btn relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-sky-500 border border-slate-300 hover:border-sky-400 text-slate-800 hover:text-black dark:bg-slate-900 dark:hover:bg-sky-500 dark:border-white/20 dark:hover:border-sky-400 dark:text-slate-200 dark:hover:text-black font-bold text-xs tracking-wide transition-all duration-300 cursor-pointer shadow-sm"
                       >
-                        <ExternalLink className="w-3.5 h-3.5 text-sky-400 group-hover/btn:text-black transition-colors" />
+                        <ExternalLink className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 group-hover/btn:text-black transition-colors" />
                         <span>Verifikasi & Lihat Sertifikat Asli</span>
                       </a>
                     ) : (

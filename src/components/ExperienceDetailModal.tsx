@@ -5,7 +5,7 @@ import {
   Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud 
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
 
 interface ExperienceDetailModalProps {
   experience: ExperienceItem | null;
@@ -83,20 +83,24 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   const prevExperience = currentIndex > 0 ? allExperiences[currentIndex - 1] : null;
   const nextExperience = currentIndex >= 0 && currentIndex < allExperiences.length - 1 ? allExperiences[currentIndex + 1] : null;
 
-  // Add photo via URL
+  // Add photo via URL (auto-formats Google Drive links & auto-syncs card thumbnail)
   const handleAddPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPhotoUrl.trim()) return;
 
+    const formattedUrl = formatImageUrl(newPhotoUrl.trim());
     const newPhoto: GalleryPhoto = {
       id: `photo-${Date.now()}`,
-      url: newPhotoUrl.trim(),
+      url: formattedUrl,
       caption: newPhotoCaption.trim() || 'Dokumentasi Praktik Kefarmasian',
     };
 
+    const newPhotos = [...photos, newPhoto];
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: [...photos, newPhoto],
+      // First photo in galleryPhotos automatically updates card image thumbnail
+      image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+      galleryPhotos: newPhotos,
     };
 
     onUpdateExperience(updated);
@@ -105,7 +109,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     setShowAddPhotoForm(false);
   };
 
-  // Upload photo file: tries Supabase Storage first, then compresses via Canvas to Base64 DataURL
+  // Upload photo file: tries Supabase Storage first, then Canvas compression dataURL (<150KB)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,11 +120,11 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     try {
       // 1. Try Supabase Storage upload
       const result = await uploadImageToSupabaseStorage(file, 'pkpa');
-      let finalUrl = result.url;
+      let finalUrl = result.url ? formatImageUrl(result.url) : '';
 
       // 2. If storage returned empty, guarantee compressed Base64 DataURL via Canvas
       if (!finalUrl) {
-        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+        finalUrl = await compressImageWithCanvas(file, 900, 0.75);
       }
 
       if (finalUrl) {
@@ -129,9 +133,12 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           url: finalUrl,
           caption: file.name.replace(/\.[^/.]+$/, ''),
         };
+        const newPhotos = [...photos, newPhoto];
         const updated: ExperienceItem = {
           ...experience,
-          galleryPhotos: [...photos, newPhoto],
+          // First photo in galleryPhotos automatically updates card image thumbnail
+          image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+          galleryPhotos: newPhotos,
         };
         onUpdateExperience(updated);
         setUploadStatus(result.isCloud ? 'Tersimpan di Cloud Storage!' : 'Foto berhasil diunggah!');
@@ -142,18 +149,20 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       }
     } catch (err) {
       console.error('File upload error:', err);
-      // Fallback: direct FileReader
+      // Fallback: direct canvas compression
       try {
-        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        const fallbackUrl = await compressImageWithCanvas(file, 900, 0.75);
         if (fallbackUrl) {
           const newPhoto: GalleryPhoto = {
             id: `photo-${Date.now()}`,
             url: fallbackUrl,
             caption: file.name.replace(/\.[^/.]+$/, ''),
           };
+          const newPhotos = [...photos, newPhoto];
           onUpdateExperience({
             ...experience,
-            galleryPhotos: [...photos, newPhoto],
+            image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+            galleryPhotos: newPhotos,
           });
           setUploadStatus('Foto berhasil disimpan!');
           setTimeout(() => setUploadStatus(null), 3500);
@@ -168,11 +177,13 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     }
   };
 
-  // Delete photo
+  // Delete photo (and sync card image thumbnail if first photo deleted)
   const handleDeletePhoto = (photoId: string) => {
+    const remainingPhotos = photos.filter((p) => p.id !== photoId);
     const updated: ExperienceItem = {
       ...experience,
-      galleryPhotos: photos.filter((p) => p.id !== photoId),
+      image: remainingPhotos.length > 0 ? (remainingPhotos[0].url || experience.image) : experience.image,
+      galleryPhotos: remainingPhotos,
     };
     onUpdateExperience(updated);
   };
@@ -233,21 +244,21 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       <div className="relative w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-3xl glass-modal-deep border border-sky-500/40 p-5 sm:p-8 lg:p-10 text-left z-10 space-y-7 shadow-[0_0_60px_rgba(0,112,243,0.3)]">
         
         {/* A. Top Breadcrumb & Navigation Bar */}
-        <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/15">
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 overflow-hidden">
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/15">
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 overflow-hidden">
             <button
               onClick={onClose}
-              className="text-slate-300 hover:text-white transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Kembali</span>
             </button>
             <span aria-hidden="true">/</span>
-            <span className="text-slate-400 truncate">
+            <span className="text-slate-500 dark:text-slate-400 truncate">
               {experience.type === 'practical' ? 'PKPA Works' : 'Organisasi'}
             </span>
             <span aria-hidden="true">/</span>
-            <span className="text-sky-300 font-semibold truncate">
+            <span className="text-sky-600 dark:text-sky-300 font-semibold truncate">
               {experience.institution}
             </span>
           </div>
@@ -257,7 +268,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             {prevExperience && (
               <button
                 onClick={() => onSelectExperience(prevExperience)}
-                className="pill-badge text-xs py-1 px-3 hover:border-white transition-all cursor-pointer"
+                className="pill-badge text-xs py-1 px-3 hover:border-sky-400 transition-all cursor-pointer"
                 title={`Sebelumnya: ${prevExperience.institution}`}
               >
                 <ChevronLeft className="w-3.5 h-3.5 mr-1" />
@@ -269,7 +280,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             {nextExperience && (
               <button
                 onClick={() => onSelectExperience(nextExperience)}
-                className="pill-badge text-xs py-1 px-3 hover:border-white transition-all cursor-pointer"
+                className="pill-badge text-xs py-1 px-3 hover:border-sky-400 transition-all cursor-pointer"
                 title={`Selanjutnya: ${nextExperience.institution}`}
               >
                 <span className="hidden sm:inline">Selanjutnya</span>
@@ -281,7 +292,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             <button
               onClick={onClose}
               aria-label="Tutup"
-              className="p-2 rounded-full border border-white/20 hover:border-white text-slate-300 hover:text-white bg-slate-900 transition-colors cursor-pointer ml-1"
+              className="p-2 rounded-full border border-slate-300 dark:border-white/20 hover:border-sky-400 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-slate-900 transition-colors cursor-pointer ml-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -351,33 +362,45 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                     className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1">
+                    URL Gambar / Thumbnail Kartu Depan (Google Drive / Link Foto HTTPS)
+                  </label>
+                  <input
+                    type="text"
+                    value={experience.image || ''}
+                    onChange={(e) => onUpdateExperience({ ...experience, image: formatImageUrl(e.target.value) })}
+                    placeholder="https://images.unsplash.com/... atau link Google Drive"
+                    className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                  />
+                </div>
               </div>
             </div>
           ) : (
             <>
               {/* Pill Badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="pill-badge text-xs font-mono font-bold text-sky-300 border-sky-400/50 bg-sky-950/60 shadow-[0_0_15px_rgba(0,112,243,0.3)]">
+                <span className="pill-badge text-xs font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/50 bg-sky-50 dark:bg-sky-950/60 shadow-sm">
                   {experience.badgeLabel}
                 </span>
-                <span className="pill-badge text-xs font-mono text-slate-300 border-white/20">
-                  <Calendar className="w-3.5 h-3.5 mr-1 text-sky-400" />
+                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20">
+                  <Calendar className="w-3.5 h-3.5 mr-1 text-sky-600 dark:text-sky-400" />
                   {experience.period}
                 </span>
-                <span className="pill-badge text-xs font-mono text-slate-300 border-white/20">
-                  <MapPin className="w-3.5 h-3.5 mr-1 text-sky-400" />
+                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20">
+                  <MapPin className="w-3.5 h-3.5 mr-1 text-sky-600 dark:text-sky-400" />
                   {experience.location}
                 </span>
               </div>
 
               {/* Title Instansi */}
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] text-white">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
                 {experience.institution}
               </h2>
 
               {/* Role */}
-              <div className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
-                <Building className="w-4 h-4 text-sky-400 shrink-0" />
+              <div className="text-base sm:text-lg font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                <Building className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
                 <span>Peran: {experience.role}</span>
               </div>
             </>
@@ -385,15 +408,15 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         </div>
 
         {/* C. Kotak Ringkasan / Overview Pengalaman (fullOverview) */}
-        <div className="p-5 rounded-2xl glass-futuristic-card text-sm sm:text-base text-slate-200 leading-relaxed border-sky-500/20">
+        <div className="p-5 rounded-2xl glass-futuristic-card text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed border-sky-500/20">
           {isEditMode ? (
             <div className="space-y-1.5">
-              <label className="text-xs font-mono text-amber-300 block font-semibold">Edit Ringkasan / Overview Pengalaman:</label>
+              <label className="text-xs font-mono text-amber-500 dark:text-amber-300 block font-semibold">Edit Ringkasan / Overview Pengalaman:</label>
               <textarea
                 rows={3}
                 value={experience.fullOverview || ''}
                 onChange={(e) => onUpdateExperience({ ...experience, fullOverview: e.target.value })}
-                className="w-full p-3 rounded-xl bg-slate-900 border border-amber-400/50 text-sm text-white focus:outline-none focus:border-amber-400"
+                className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400/50 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-400"
               />
             </div>
           ) : (
@@ -402,10 +425,10 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         </div>
 
         {/* D. Kotak "Detail Tugas & Pencapaian Praktik" (dutiesAndAchievements) */}
-        <div className="p-6 rounded-2xl glass-futuristic-card border border-white/15 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
-            <h3 className="text-base sm:text-lg font-bold font-['Outfit'] text-white flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+        <div className="p-6 rounded-2xl glass-futuristic-card border border-slate-200 dark:border-white/15 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+            <h3 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
+              <CheckCircle2 className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
               <span>Detail Tugas & Pencapaian Praktik</span>
             </h3>
             {isEditMode && (
@@ -418,9 +441,9 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           <div className="space-y-3">
             {duties.length > 0 ? (
               duties.map((duty, idx) => (
-                <div key={idx} className="flex items-start justify-between gap-3 text-xs sm:text-sm text-slate-200 leading-relaxed group">
+                <div key={idx} className="flex items-start justify-between gap-3 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed group">
                   <div className="flex items-start gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-sky-400 mt-2 shrink-0 shadow-[0_0_6px_#00d4ff]" aria-hidden="true" />
+                    <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 mt-2 shrink-0 shadow-[0_0_6px_#00d4ff]" aria-hidden="true" />
                     <span>{duty}</span>
                   </div>
                   {isEditMode && (
@@ -646,14 +669,14 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         </div>
 
         {/* F. Bagian Bawah: Kompetensi */}
-        <div className="p-5 rounded-2xl glass-futuristic-card border border-white/10 space-y-3 text-left">
+        <div className="p-5 rounded-2xl glass-futuristic-card border border-slate-200 dark:border-white/10 space-y-3 text-left">
           <div className="flex items-center justify-between">
-            <div className="text-xs sm:text-sm font-mono text-sky-400 font-bold flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-sky-400" />
+            <div className="text-xs sm:text-sm font-mono text-sky-600 dark:text-sky-400 font-bold flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-sky-600 dark:text-sky-400" />
               <span>Kompetensi</span>
             </div>
             {isEditMode && (
-              <span className="text-[10px] font-mono text-amber-300 bg-amber-950/70 border border-amber-600/50 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-mono text-amber-500 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border border-amber-400 dark:border-amber-600/50 px-2 py-0.5 rounded">
                 Admin: Kelola Kompetensi
               </span>
             )}
@@ -664,14 +687,14 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               competencies.map((comp, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-sky-200 bg-sky-950/40 border border-sky-500/30 shadow-[0_0_10px_rgba(0,112,243,0.15)] hover:border-sky-400/60 transition-all group"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-sky-800 dark:text-sky-200 bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-500/30 shadow-xs hover:border-sky-400 transition-all group"
                 >
                   <span>{comp}</span>
                   {isEditMode && (
                     <button
                       type="button"
                       onClick={() => handleDeleteCompetency(i)}
-                      className="text-red-400 hover:text-red-200 cursor-pointer p-0.5 rounded hover:bg-red-950/50 transition-colors"
+                      className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-200 cursor-pointer p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
                       title="Hapus kompetensi ini"
                     >
                       <X className="w-3 h-3" />
@@ -680,19 +703,19 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                 </span>
               ))
             ) : (
-              <span className="text-xs font-mono text-slate-400 italic">Kompetensi profesional apoteker.</span>
+              <span className="text-xs font-mono text-slate-500 dark:text-slate-400 italic">Kompetensi profesional apoteker.</span>
             )}
           </div>
 
           {/* Form Tambah Kompetensi Baru in Edit Mode */}
           {isEditMode && (
-            <form onSubmit={handleAddCompetency} className="pt-2 border-t border-white/10 flex gap-2">
+            <form onSubmit={handleAddCompetency} className="pt-2 border-t border-slate-200 dark:border-white/10 flex gap-2">
               <input
                 type="text"
                 placeholder="Tambah nama kompetensi baru..."
                 value={newCompetencyText}
                 onChange={(e) => setNewCompetencyText(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-400"
+                className="flex-1 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-400"
               />
               <button
                 type="submit"
@@ -705,10 +728,10 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
         </div>
 
         {/* Footer Modal: Tombol Tutup & Kembali di pojok kanan bawah */}
-        <div className="pt-4 border-t border-white/10 flex items-center justify-end">
+        <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full bg-white text-black text-xs sm:text-sm font-bold hover:bg-slate-200 transition-all cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-[0.98]"
+            className="px-6 py-2.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-slate-200 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98]"
           >
             Tutup & Kembali
           </button>

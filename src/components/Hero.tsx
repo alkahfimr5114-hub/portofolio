@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowDown, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase, Loader2, Cloud } from 'lucide-react';
 import { EducationItem, PersonalInfo } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage, compressImageWithCanvas } from '../lib/supabase';
+import { PROFILE_PHOTO } from '../data/pharmacyData';
+import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
 
 interface HeroProps {
   onOpenCV?: () => void;
@@ -50,9 +51,9 @@ export const Hero: React.FC<HeroProps> = ({
 
     try {
       const result = await uploadImageToSupabaseStorage(file, 'profile');
-      let finalUrl = result.url;
+      let finalUrl = result.url ? formatImageUrl(result.url) : '';
       if (!finalUrl) {
-        finalUrl = await compressImageWithCanvas(file, 800, 0.7);
+        finalUrl = await compressImageWithCanvas(file, 900, 0.75);
       }
       if (finalUrl) {
         onUpdateProfilePhoto(finalUrl);
@@ -62,7 +63,7 @@ export const Hero: React.FC<HeroProps> = ({
     } catch (err: any) {
       console.error('Upload profile photo error:', err);
       try {
-        const fallbackUrl = await compressImageWithCanvas(file, 800, 0.7);
+        const fallbackUrl = await compressImageWithCanvas(file, 900, 0.75);
         if (fallbackUrl) {
           onUpdateProfilePhoto(fallbackUrl);
           setUploadPhotoStatus('Tersimpan di perangkat lokal');
@@ -80,7 +81,7 @@ export const Hero: React.FC<HeroProps> = ({
   const handleSavePhotoUrl = (e: React.FormEvent) => {
     e.preventDefault();
     if (photoUrlTemp.trim()) {
-      onUpdateProfilePhoto(photoUrlTemp.trim());
+      onUpdateProfilePhoto(formatImageUrl(photoUrlTemp.trim()));
       setPhotoUrlTemp('');
       setShowPhotoUrlInput(false);
     }
@@ -131,14 +132,14 @@ export const Hero: React.FC<HeroProps> = ({
             )}
           </div>
 
-          {/* Giant Typography: "Port" (Clean White Bold Sans) + "folio." (Electric Blue Italic Serif Gradient) */}
+          {/* Giant Typography: "Port" (Clean Sans) + "folio." (Electric Blue Italic Serif Gradient) */}
           <h1 className="text-7xl sm:text-8xl md:text-9xl lg:text-[11.5rem] xl:text-[13.5rem] font-bold tracking-tight leading-none flex items-baseline justify-center">
-            <span className="text-white font-['Outfit'] font-black">
+            <span className="text-slate-900 dark:text-white font-['Outfit'] font-black transition-colors">
               Port
             </span>
             <span className="text-folio-italic pl-1">
               folio
-              <span className="text-sky-400 not-italic font-['Outfit'] select-none">
+              <span className="text-sky-500 dark:text-sky-400 not-italic font-['Outfit'] select-none">
                 .
               </span>
             </span>
@@ -166,7 +167,7 @@ export const Hero: React.FC<HeroProps> = ({
         {/* Subtitle tag (Bersih tanpa Regulatory Affairs atau Sistem Mutu) */}
         {isEditMode ? (
           <div className="w-full max-w-xl mx-auto mt-1 px-4">
-            <label className="text-[11px] font-mono text-amber-300 block mb-1">Edit Subtitle:</label>
+            <label className="text-[11px] font-mono text-amber-500 dark:text-amber-300 block mb-1">Edit Subtitle:</label>
             <input
               type="text"
               value={personalInfo.specialization}
@@ -175,7 +176,7 @@ export const Hero: React.FC<HeroProps> = ({
             />
           </div>
         ) : (
-          <p className="text-xs sm:text-sm font-mono text-slate-300 tracking-[0.2em] uppercase max-w-xl mx-auto mt-1">
+          <p className="text-xs sm:text-sm font-mono text-slate-600 dark:text-slate-300 tracking-[0.2em] uppercase max-w-xl mx-auto mt-1 transition-colors">
             {personalInfo.specialization}
           </p>
         )}
@@ -196,7 +197,7 @@ export const Hero: React.FC<HeroProps> = ({
             <span className="absolute -inset-1 rounded-full bg-cyan-400/50 blur-md group-hover:blur-lg transition-all -z-10 animate-pulse" />
           </button>
 
-          <p className="text-xs font-mono text-slate-400 tracking-wide">
+          <p className="text-xs font-mono text-slate-500 dark:text-slate-400 tracking-wide transition-colors">
             {hasEntered
               ? 'Portofolio aktif · Klik untuk melompat ke profil'
               : 'Klik tombol di atas untuk membuka seluruh halaman portofolio'}
@@ -237,42 +238,42 @@ export const Hero: React.FC<HeroProps> = ({
               
               {/* Sapaan Raksasa: "Hello I'm Andi Al Kahfi" */}
               <div className="space-y-1 w-full">
-                <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-['Outfit'] tracking-tight text-white leading-[1.08]">
+                <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white leading-[1.08] transition-colors">
                   Hello<br />
                   {isEditMode ? (
                     <div className="space-y-1 mt-1">
-                      <label className="text-[11px] font-mono text-amber-300 block font-normal">Edit Sapaan Perkenalan:</label>
+                      <label className="text-[11px] font-mono text-amber-500 dark:text-amber-300 block font-normal">Edit Sapaan Perkenalan:</label>
                       <input
                         type="text"
                         value={personalInfo.shortGreeting}
                         onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, shortGreeting: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-400 text-white text-2xl sm:text-4xl font-bold focus:outline-none"
+                        className="w-full px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white text-2xl sm:text-4xl font-bold focus:outline-none"
                       />
                     </div>
                   ) : (
                     <span>
-                      <span className="text-white">I'm </span>
-                      <span className="text-sky-400 font-mono font-medium text-3xl sm:text-4xl lg:text-5xl mr-1.5">apt.</span>
-                      <span className="text-white">Andi Al Kahfi Akihito MR</span>
-                      <span className="text-sky-400 font-mono font-medium text-2xl sm:text-3xl lg:text-4xl ml-1.5">, S.Farm</span>
+                      <span className="text-slate-900 dark:text-white transition-colors">I'm </span>
+                      <span className="text-sky-600 dark:text-sky-400 font-mono font-medium text-3xl sm:text-4xl lg:text-5xl mr-1.5">apt.</span>
+                      <span className="text-slate-900 dark:text-white transition-colors">Andi Al Kahfi Akihito MR</span>
+                      <span className="text-sky-600 dark:text-sky-400 font-mono font-medium text-2xl sm:text-3xl lg:text-4xl ml-1.5">, S.Farm</span>
                     </span>
                   )}
                 </h2>
               </div>
 
-              {/* Paragraf Pengenalan (Bersih tanpa Regulatory Affairs atau Sistem Mutu) */}
+              {/* Paragraf Pengenalan */}
               {isEditMode ? (
                 <div className="w-full space-y-1">
-                  <label className="text-[11px] font-mono text-amber-300 block">Edit Ringkasan Profil:</label>
+                  <label className="text-[11px] font-mono text-amber-500 dark:text-amber-300 block">Edit Ringkasan Profil:</label>
                   <textarea
                     rows={5}
                     value={personalInfo.summary}
                     onChange={(e) => onUpdatePersonalInfo({ ...personalInfo, summary: e.target.value })}
-                    className="w-full p-4 rounded-2xl bg-slate-900 border border-amber-400 text-sm text-slate-100 leading-relaxed font-sans focus:outline-none"
+                    className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-sm text-slate-800 dark:text-slate-100 leading-relaxed font-sans focus:outline-none"
                   />
                 </div>
               ) : (
-                <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
+                <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed max-w-2xl transition-colors">
                   {personalInfo.summary}
                 </p>
               )}
@@ -280,9 +281,9 @@ export const Hero: React.FC<HeroProps> = ({
               {/* Bagian Items dengan Pill Badge & Italic Subtitle */}
               <div className="w-full space-y-4 pt-2">
                 
-                <div className="flex items-center justify-between pb-1 border-b border-white/10">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200 dark:border-white/10 transition-colors">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-white">
+                    <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
                       Pendidikan & Kualifikasi :
                     </h3>
                     {isEditMode && (
@@ -360,14 +361,14 @@ export const Hero: React.FC<HeroProps> = ({
                       ) : (
                         <>
                           <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="pill-tag-badge text-xs font-semibold border-white/40 bg-white/10 text-white">
+                            <span className="pill-tag-badge text-xs font-semibold">
                               {edu.institution}
                             </span>
-                            <span className="text-xs sm:text-sm font-['Playfair_Display'] italic text-slate-300">
+                            <span className="text-xs sm:text-sm font-['Playfair_Display'] italic text-slate-600 dark:text-slate-300 transition-colors">
                               {edu.degree} · {edu.period}
                             </span>
                           </div>
-                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed pl-1">
+                          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed pl-1 transition-colors">
                             {edu.focus} {edu.gpa ? `(IPK ${edu.gpa} / ${edu.scale})` : ''}
                           </p>
                         </>
@@ -424,20 +425,20 @@ export const Hero: React.FC<HeroProps> = ({
 
                   {/* Portrait Photo */}
                   <img
-                    src={profilePhoto || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop'}
+                    src={profilePhoto || PROFILE_PHOTO}
                     alt="Foto Profil apt. Andi Al Kahfi Akihito MR, S.Farm"
                     onError={(e) => {
-                      if (e.currentTarget.src !== 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop') {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop';
+                      if (e.currentTarget.src !== PROFILE_PHOTO) {
+                        e.currentTarget.src = PROFILE_PHOTO;
                       }
                     }}
                     className="w-full h-full object-cover object-[center_12%] sm:object-[center_10%] filter contrast-[1.06] brightness-[1.02] transform group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
                   />
                   
-                  {/* Subtle Studio Blue Mood Shading & Seamless Fade to Black at Bottom */}
+                  {/* Subtle Studio Blue Mood Shading & Seamless Fade at Bottom */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent opacity-85 pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-36 bg-gradient-to-t from-slate-50 via-slate-50/70 to-transparent dark:from-black dark:via-black/80 pointer-events-none transition-colors duration-300" />
 
                   {/* Photo Change Controls in Admin Mode */}
                   {isEditMode && (

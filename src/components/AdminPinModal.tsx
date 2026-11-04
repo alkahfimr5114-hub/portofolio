@@ -90,13 +90,13 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md rounded-3xl bg-slate-950/95 border border-sky-500/40 p-6 sm:p-8 text-center z-10 space-y-6 shadow-[0_0_60px_rgba(0,112,243,0.35)]">
+      <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-slate-950/95 border border-slate-200 dark:border-sky-500/40 p-6 sm:p-8 text-center z-10 space-y-6 shadow-2xl transition-colors">
         
         {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="Tutup"
-          className="absolute top-5 right-5 p-2 rounded-full border border-white/10 hover:border-white/30 text-slate-400 hover:text-white bg-slate-900 transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-full border border-slate-300 dark:border-white/10 hover:border-slate-500 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-900 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -105,19 +105,19 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500/20 via-blue-600/30 to-sky-400/20 border border-sky-400/50 flex items-center justify-center shadow-[0_0_30px_rgba(0,112,243,0.3)]">
             {isEditMode ? (
-              <Unlock className="w-8 h-8 text-amber-400" />
+              <Unlock className="w-8 h-8 text-amber-500 dark:text-amber-400" />
             ) : (
-              <KeyRound className="w-8 h-8 text-sky-400" />
+              <KeyRound className="w-8 h-8 text-sky-600 dark:text-sky-400" />
             )}
           </div>
         </div>
 
         {/* Title & Description */}
         <div className="space-y-2">
-          <h3 className="text-2xl font-bold font-['Outfit'] text-white">
+          <h3 className="text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
             {isEditMode ? 'Status Mode Admin: Aktif' : 'Masukkan PIN Admin'}
           </h3>
-          <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs mx-auto transition-colors">
             {isEditMode
               ? 'Mode Edit Global dan Manajemen Foto PKPA sedang aktif. Anda dapat mengunci kembali kapan saja.'
               : 'Fitur tersembunyi khusus pemilik portofolio untuk mengaktifkan pengeditan teks langsung & pengelolaan galeri foto PKPA.'}
@@ -127,8 +127,8 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
         {isEditMode ? (
           /* Active State actions */
           <div className="space-y-4 pt-2">
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <span>Editing teks aktif & tombol foto PKPA terbuka</span>
             </div>
 
@@ -147,7 +147,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-2.5 rounded-full border border-white/20 text-slate-300 hover:text-white text-xs font-medium transition-colors cursor-pointer"
+                className="w-full py-2.5 rounded-full border border-slate-300 dark:border-white/20 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium transition-colors cursor-pointer"
               >
                 Tetap Lanjutkan Edit
               </button>
@@ -161,7 +161,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
                       onClose();
                     }
                   }}
-                  className="w-full py-2 rounded-full border border-amber-500/50 hover:bg-amber-500/20 text-amber-300 text-xs font-mono transition-colors cursor-pointer flex items-center justify-center gap-1.5 mt-1"
+                  className="w-full py-2 rounded-full border border-amber-500/50 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-mono transition-colors cursor-pointer flex items-center justify-center gap-1.5 mt-1"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Data ke Default & Bersihkan Cache</span>
@@ -181,8 +181,8 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
                     key={i}
                     className={`w-10 h-12 sm:w-11 sm:h-13 rounded-xl border flex items-center justify-center text-xl font-bold font-mono transition-all duration-200 ${
                       filled
-                        ? 'border-sky-400 bg-sky-950/80 text-sky-300 shadow-[0_0_12px_rgba(0,112,243,0.4)] scale-105'
-                        : 'border-white/20 bg-slate-900/60 text-slate-500'
+                        ? 'border-sky-500 dark:border-sky-400 bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 shadow-[0_0_12px_rgba(0,112,243,0.3)] scale-105'
+                        : 'border-slate-300 dark:border-white/20 bg-slate-100 dark:bg-slate-900/60 text-slate-400'
                     }`}
                   >
                     {filled ? '•' : ''}
@@ -223,16 +223,16 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
 
             {/* Error Message */}
             {error && (
-              <div className="p-2.5 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs flex items-center justify-center gap-2 animate-shake">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <div className="p-2.5 rounded-xl bg-red-100 dark:bg-red-950/70 border border-red-300 dark:border-red-500/50 text-red-700 dark:text-red-200 text-xs flex items-center justify-center gap-2 animate-shake">
+                <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Success Message */}
             {success && (
-              <div className="p-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 text-xs flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-500/50 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>PIN Benar! Membuka Mode Admin...</span>
               </div>
             )}
@@ -244,7 +244,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
                   key={digit}
                   type="button"
                   onClick={() => handleDigitClick(digit)}
-                  className="py-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/10 hover:border-sky-400 text-lg font-bold font-mono text-white transition-all cursor-pointer active:scale-95"
+                  className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/80 dark:hover:bg-slate-800 border border-slate-300 hover:border-sky-500 dark:border-white/10 dark:hover:border-sky-400 text-lg font-bold font-mono text-slate-800 dark:text-white transition-all cursor-pointer active:scale-95"
                 >
                   {digit}
                 </button>
@@ -252,28 +252,28 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
               <button
                 type="button"
                 onClick={() => setPin('')}
-                className="py-3 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-white/10 text-xs font-mono text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/60 dark:hover:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => handleDigitClick('0')}
-                className="py-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/10 hover:border-sky-400 text-lg font-bold font-mono text-white transition-all cursor-pointer active:scale-95"
+                className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/80 dark:hover:bg-slate-800 border border-slate-300 hover:border-sky-500 dark:border-white/10 dark:hover:border-sky-400 text-lg font-bold font-mono text-slate-800 dark:text-white transition-all cursor-pointer active:scale-95"
               >
                 0
               </button>
               <button
                 type="button"
                 onClick={handleDeleteDigit}
-                className="py-3 rounded-xl bg-slate-900/60 hover:bg-slate-800 border border-white/10 text-xs font-mono text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/60 dark:hover:bg-slate-800 border border-slate-300 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer"
               >
                 Del
               </button>
             </div>
 
             {/* Hint */}
-            <div className="text-[11px] font-mono text-slate-300">
+            <div className="text-[11px] font-mono text-slate-500 dark:text-slate-300">
               Kunci Rahasia Admin Terproteksi
             </div>
           </form>
