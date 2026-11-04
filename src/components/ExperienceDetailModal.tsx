@@ -243,7 +243,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       {/* Main Modal Card View */}
       <div className="relative w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-3xl glass-modal-deep border border-sky-500/40 p-5 sm:p-8 lg:p-10 text-left z-10 space-y-7 shadow-[0_0_60px_rgba(0,112,243,0.3)]">
         
-        {/* A. Top Breadcrumb & Navigation Bar */}
+        {/* A. Top Breadcrumb & Close Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/15">
           <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 overflow-hidden">
             <button
@@ -263,40 +263,14 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Prev */}
-            {prevExperience && (
-              <button
-                onClick={() => onSelectExperience(prevExperience)}
-                className="pill-badge text-xs py-1 px-3 hover:border-sky-400 transition-all cursor-pointer"
-                title={`Sebelumnya: ${prevExperience.institution}`}
-              >
-                <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-                <span className="hidden sm:inline">Sebelumnya</span>
-              </button>
-            )}
-
-            {/* Next */}
-            {nextExperience && (
-              <button
-                onClick={() => onSelectExperience(nextExperience)}
-                className="pill-badge text-xs py-1 px-3 hover:border-sky-400 transition-all cursor-pointer"
-                title={`Selanjutnya: ${nextExperience.institution}`}
-              >
-                <span className="hidden sm:inline">Selanjutnya</span>
-                <ChevronRight className="w-3.5 h-3.5 ml-1" />
-              </button>
-            )}
-
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              aria-label="Tutup"
-              className="p-2 rounded-full border border-slate-300 dark:border-white/20 hover:border-sky-400 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-slate-900 transition-colors cursor-pointer ml-1"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            aria-label="Tutup"
+            className="p-2 rounded-full border border-slate-300 dark:border-white/20 hover:border-sky-400 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 dark:bg-slate-900 transition-colors cursor-pointer shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* B. Instansi Pill Badge, Periode, Lokasi, Judul & Peran */}
@@ -378,18 +352,20 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Pill Badges */}
+              {/* Pill Badges: Instansi, Tanggal, dan Lokasi Berdampingan dalam Satu Baris Horizontal */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="pill-badge text-xs font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/50 bg-sky-50 dark:bg-sky-950/60 shadow-sm">
-                  {experience.badgeLabel}
+                {experience.badgeLabel && (
+                  <span className="pill-badge text-xs font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/50 bg-sky-50 dark:bg-sky-950/60 shadow-xs">
+                    {experience.badgeLabel}
+                  </span>
+                )}
+                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20 flex items-center">
+                  <Calendar className="w-3.5 h-3.5 mr-1.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span>{experience.period}</span>
                 </span>
-                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20">
-                  <Calendar className="w-3.5 h-3.5 mr-1 text-sky-600 dark:text-sky-400" />
-                  {experience.period}
-                </span>
-                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20">
-                  <MapPin className="w-3.5 h-3.5 mr-1 text-sky-600 dark:text-sky-400" />
-                  {experience.location}
+                <span className="pill-badge text-xs font-mono text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/20 flex items-center">
+                  <MapPin className="w-3.5 h-3.5 mr-1.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                  <span>{experience.location}</span>
                 </span>
               </div>
 
@@ -727,14 +703,43 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
         </div>
 
-        {/* Footer Modal: Tombol Tutup & Kembali di pojok kanan bawah */}
-        <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end">
+        {/* Footer Modal: Sisi Kiri (Tutup & Kembali) dan Sisi Kanan (Sebelumnya & Selanjutnya) */}
+        <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-3 sm:gap-4">
+          {/* Sisi Kiri: Tombol Tutup & Kembali */}
           <button
+            type="button"
             onClick={onClose}
-            className="px-6 py-2.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-slate-200 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98]"
+            className="px-5 sm:px-6 py-2.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-black dark:hover:bg-slate-200 text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-md hover:scale-[1.02] active:scale-[0.98] text-center shrink-0"
           >
             Tutup & Kembali
           </button>
+
+          {/* Sisi Kanan: Navigasi Sebelumnya & Selanjutnya Berdampingan */}
+          <div className="flex items-center gap-2 ml-auto">
+            {prevExperience && (
+              <button
+                type="button"
+                onClick={() => onSelectExperience(prevExperience)}
+                className="pill-badge text-xs py-2 px-3 sm:px-4 hover:border-sky-400 text-slate-700 dark:text-slate-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0"
+                title={`Sebelumnya: ${prevExperience.institution}`}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Sebelumnya</span>
+              </button>
+            )}
+
+            {nextExperience && (
+              <button
+                type="button"
+                onClick={() => onSelectExperience(nextExperience)}
+                className="pill-badge text-xs py-2 px-3 sm:px-4 hover:border-sky-400 text-slate-700 dark:text-slate-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0"
+                title={`Selanjutnya: ${nextExperience.institution}`}
+              >
+                <span>Selanjutnya</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
       </div>
