@@ -21,8 +21,13 @@ export interface FullPortfolioData {
   projects?: Project[];
 }
 
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+export const SUPABASE_URL = (
+  import.meta.env.VITE_SUPABASE_URL || 'https://xhzudsuwkvwgskgpvllk.supabase.co'
+).trim();
+
+export const SUPABASE_ANON_KEY = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_42ZVOj6RjARC8yayvM8vjw_B_oma7a0'
+).trim();
 
 function isValidHttpUrl(urlStr: string): boolean {
   try {
@@ -34,23 +39,21 @@ function isValidHttpUrl(urlStr: string): boolean {
 }
 
 export const isSupabaseConfigured = Boolean(
-  supabaseUrl && 
-  supabaseAnonKey && 
-  isValidHttpUrl(supabaseUrl)
+  SUPABASE_URL && 
+  SUPABASE_ANON_KEY && 
+  isValidHttpUrl(SUPABASE_URL)
 );
 
-export const supabase = isSupabaseConfigured
-  ? (() => {
-      try {
-        return createClient(supabaseUrl, supabaseAnonKey, {
-          auth: { persistSession: false },
-        });
-      } catch (e) {
-        console.warn('[Supabase] Init notice:', e);
-        return null;
-      }
-    })()
-  : null;
+export const supabase = (() => {
+  try {
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+    });
+  } catch (e) {
+    console.warn('[Supabase] Init notice:', e);
+    return null;
+  }
+})();
 
 const SETTINGS_ROW_ID = 'main';
 const TABLE_NAME = 'portfolio_settings';
