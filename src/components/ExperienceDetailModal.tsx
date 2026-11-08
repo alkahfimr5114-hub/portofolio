@@ -255,7 +255,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </button>
             <span aria-hidden="true">/</span>
             <span className="text-slate-500 dark:text-slate-400 truncate">
-              {experience.type === 'practical' ? 'PKPA Works' : 'Organisasi'}
+              {experience.type === 'practical' ? 'PKPA Works' : experience.type === 'other' ? 'Pencapaian Lainnya' : 'Organisasi'}
             </span>
             <span aria-hidden="true">/</span>
             <span className="text-sky-600 dark:text-sky-300 font-semibold truncate">

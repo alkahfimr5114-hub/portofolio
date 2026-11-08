@@ -5,7 +5,8 @@ import {
   ExperienceItem, 
   SkillCategoryItem, 
   CertificateCardItem, 
-  PublicationItem 
+  PublicationItem,
+  SectionHeaders
 } from '../types/pharmacy';
 import { Project } from '../types/portfolio';
 
@@ -19,7 +20,33 @@ export interface FullPortfolioData {
   certificates: CertificateCardItem[];
   publication: PublicationItem;
   projects?: Project[];
+  sectionHeaders?: SectionHeaders;
+  otherExperiences?: ExperienceItem[];
 }
+
+export const DEFAULT_SECTION_HEADERS: SectionHeaders = {
+  pkpaBadge: "PKPA WORKS & PRAKTIK PROFESI APOTEKER",
+  pkpaTitle: "Pengalaman Praktik Kefarmasian",
+  pkpaSubtitle: "Setiap kartu memiliki Halaman Detail tersendiri dengan rincian tugas komprehensif, kepatuhan regulasi, serta Galeri Dokumentasi Foto PKPA.",
+  orgBadge: "KEPEMIMPINAN & ASISTENSI LABORATORIUM",
+  orgTitle: "Pengalaman Organisasi & Akademik",
+  orgSubtitle: "Peran kepemimpinan dalam bimbingan ratusan praktikan laboratorium mikrobiologi dan diplomasi kemitraan antarkampus farmasi.",
+  skillsBadge: "KEAHLIAN TEKNIS & REGULATORI",
+  skillsTitle: "Tools & Keterampilan Kefarmasian",
+  skillsSubtitle: "Instrumen analisis, pengawasan mutu, perangkat lunak farmasi, dan kepatuhan sistem regulasi.",
+  certBadge: "SERTIFIKASI & PELATIHAN",
+  certTitle: "Lisensi & Pengembangan Kompetensi",
+  certSubtitle: "Sertifikasi resmi, surat tanda registrasi, dan lokakarya kefarmasian terverifikasi.",
+  pubBadge: "PUBLIKASI ILMIAH & RISET",
+  pubTitle: "Karya Ilmiah & Penelitian",
+  pubSubtitle: "Kontribusi riset farmasi, formulasi, dan publikasi jurnal terakreditasi.",
+  contactBadge: "HUBUNGI SAYA",
+  contactTitle: "Koneksi & Kolaborasi Profesional",
+  contactSubtitle: "Terbuka untuk peluang karier kefarmasian, kolaborasi riset, dan diskusi profesional.",
+  otherBadge: "REKAM JEJAK & PENCAPAIAN TAMBAHAN",
+  otherTitle: "Pengalaman dan Pencapaian Lainnya",
+  otherSubtitle: "Dokumentasi kegiatan, proyek kolaborasi, kompetisi, dan pencapaian profesional lainnya.",
+};
 
 export const SUPABASE_URL = "https://xhzudsuwkvwgskgpvllk.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_42ZVOj6RjARC8yayvM8vjw_B_oma7a0";
@@ -69,6 +96,8 @@ export async function fetchPortfolioSettings(): Promise<Partial<FullPortfolioDat
       skillGroups: data.skill_groups || data.skillGroups,
       certificates: data.certificates,
       publication: data.publication,
+      sectionHeaders: data.section_headers || data.sectionHeaders,
+      otherExperiences: data.other_experiences || data.otherExperiences,
     };
   } catch (err) {
     console.warn('[Supabase Sync] Fetch error:', err);
@@ -88,9 +117,15 @@ export async function savePortfolioSettings(portfolioData: FullPortfolioData): P
     localStorage.setItem('alkahfi_education', JSON.stringify(portfolioData.educationList));
     localStorage.setItem('alkahfi_practical_exp_v2', JSON.stringify(portfolioData.practicalExperiences));
     localStorage.setItem('alkahfi_org_exp', JSON.stringify(portfolioData.organizationExperiences));
+    if (portfolioData.otherExperiences) {
+      localStorage.setItem('alkahfi_other_exp', JSON.stringify(portfolioData.otherExperiences));
+    }
     localStorage.setItem('alkahfi_skills', JSON.stringify(portfolioData.skillGroups));
     localStorage.setItem('alkahfi_certificates', JSON.stringify(portfolioData.certificates));
     localStorage.setItem('alkahfi_publication', JSON.stringify(portfolioData.publication));
+    if (portfolioData.sectionHeaders) {
+      localStorage.setItem('alkahfi_section_headers', JSON.stringify(portfolioData.sectionHeaders));
+    }
   } catch (e) {
     console.error('[Storage] Error saving to localStorage:', e);
   }
@@ -141,9 +176,11 @@ export function subscribeToPortfolioChanges(
                 educationList: (raw.education_list || raw.educationList) as EducationItem[] | undefined,
                 practicalExperiences: (raw.practical_experiences || raw.practicalExperiences) as ExperienceItem[] | undefined,
                 organizationExperiences: (raw.organization_experiences || raw.organizationExperiences) as ExperienceItem[] | undefined,
+                otherExperiences: (raw.other_experiences || raw.otherExperiences) as ExperienceItem[] | undefined,
                 skillGroups: (raw.skill_groups || raw.skillGroups) as SkillCategoryItem[] | undefined,
                 certificates: raw.certificates as CertificateCardItem[] | undefined,
                 publication: raw.publication as PublicationItem | undefined,
+                sectionHeaders: (raw.section_headers || raw.sectionHeaders) as SectionHeaders | undefined,
               });
             }
           }

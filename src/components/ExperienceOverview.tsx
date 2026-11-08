@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, ArrowRight, Building, Users, Sparkles, Image as ImageIcon, Plus, Trash2, Edit3 } from 'lucide-react';
-import { ExperienceItem, ExperienceCategory } from '../types/pharmacy';
+import { 
+  Calendar, 
+  MapPin, 
+  ArrowRight, 
+  Image as ImageIcon, 
+  Plus, 
+  Trash2, 
+  Edit3,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical
+} from 'lucide-react';
+import { ExperienceItem, ExperienceCategory, SectionHeaders } from '../types/pharmacy';
 
 interface ExperienceOverviewProps {
   practicalExperiences: ExperienceItem[];
@@ -11,6 +22,10 @@ interface ExperienceOverviewProps {
   onDeletePractical?: (id: string) => void;
   onAddOrganization?: () => void;
   onDeleteOrganization?: (id: string) => void;
+  sectionHeaders?: SectionHeaders;
+  onUpdateSectionHeaders?: (updated: Partial<SectionHeaders>) => void;
+  onReorderPractical?: (newOrder: ExperienceItem[]) => void;
+  onReorderOrganization?: (newOrder: ExperienceItem[]) => void;
 }
 
 export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
@@ -22,6 +37,10 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
   onDeletePractical,
   onAddOrganization,
   onDeleteOrganization,
+  sectionHeaders,
+  onUpdateSectionHeaders,
+  onReorderPractical,
+  onReorderOrganization,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<ExperienceCategory>('all');
 
@@ -37,6 +56,79 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
     ? (practicalExperiences || [])
     : (practicalExperiences || []).filter((item) => item.category === selectedFilter);
 
+  // Reorder Practical: preserve other categories in the full practicalExperiences array
+  const movePractical = (id: string, direction: 'prev' | 'next') => {
+    const currentFilteredIdx = filteredPractical.findIndex((item) => item.id === id);
+    if (currentFilteredIdx === -1) return;
+    const targetFilteredIdx = direction === 'prev' ? currentFilteredIdx - 1 : currentFilteredIdx + 1;
+    if (targetFilteredIdx < 0 || targetFilteredIdx >= filteredPractical.length) return;
+
+    const targetId = filteredPractical[targetFilteredIdx].id;
+    const fromFullIdx = practicalExperiences.findIndex((item) => item.id === id);
+    const toFullIdx = practicalExperiences.findIndex((item) => item.id === targetId);
+    if (fromFullIdx === -1 || toFullIdx === -1) return;
+
+    const newOrder = [...practicalExperiences];
+    const [movedItem] = newOrder.splice(fromFullIdx, 1);
+    newOrder.splice(toFullIdx, 0, movedItem);
+    onReorderPractical?.(newOrder);
+  };
+
+  const handleDragStartPractical = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', `practical:${id}`);
+  };
+
+  const handleDropPractical = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('practical:')) return;
+    const draggedId = data.replace('practical:', '');
+    if (!draggedId || draggedId === targetId) return;
+
+    const fromFullIdx = practicalExperiences.findIndex((item) => item.id === draggedId);
+    const toFullIdx = practicalExperiences.findIndex((item) => item.id === targetId);
+    if (fromFullIdx === -1 || toFullIdx === -1) return;
+
+    const newOrder = [...practicalExperiences];
+    const [movedItem] = newOrder.splice(fromFullIdx, 1);
+    newOrder.splice(toFullIdx, 0, movedItem);
+    onReorderPractical?.(newOrder);
+  };
+
+  // Reorder Organization
+  const moveOrganization = (id: string, direction: 'prev' | 'next') => {
+    const currentIdx = organizationExperiences.findIndex((item) => item.id === id);
+    if (currentIdx === -1) return;
+    const targetIdx = direction === 'prev' ? currentIdx - 1 : currentIdx + 1;
+    if (targetIdx < 0 || targetIdx >= organizationExperiences.length) return;
+
+    const newOrder = [...organizationExperiences];
+    const [movedItem] = newOrder.splice(currentIdx, 1);
+    newOrder.splice(targetIdx, 0, movedItem);
+    onReorderOrganization?.(newOrder);
+  };
+
+  const handleDragStartOrganization = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', `org:${id}`);
+  };
+
+  const handleDropOrganization = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('org:')) return;
+    const draggedId = data.replace('org:', '');
+    if (!draggedId || draggedId === targetId) return;
+
+    const fromIdx = organizationExperiences.findIndex((item) => item.id === draggedId);
+    const toIdx = organizationExperiences.findIndex((item) => item.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const newOrder = [...organizationExperiences];
+    const [movedItem] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, movedItem);
+    onReorderOrganization?.(newOrder);
+  };
+
   return (
     <div id="pkpa-works" className="space-y-24 py-16 lg:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       
@@ -45,15 +137,37 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
               <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
-              <span>PKPA Works & Praktik Profesi Apoteker</span>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={sectionHeaders?.pkpaBadge || 'PKPA Works & Praktik Profesi Apoteker'}
+                  onChange={(e) => onUpdateSectionHeaders?.({ pkpaBadge: e.target.value })}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono font-semibold uppercase text-sky-700 dark:text-sky-300 w-full max-w-md focus:outline-none"
+                  title="Edit Label Badge PKPA"
+                />
+              ) : (
+                <span>{sectionHeaders?.pkpaBadge || 'PKPA Works & Praktik Profesi Apoteker'}</span>
+              )}
             </div>
+
             <div className="flex flex-wrap items-center gap-4">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
-                Pengalaman Praktik Kefarmasian
-              </h2>
+              {isEditMode ? (
+                <input
+                  type="text"
+                  value={sectionHeaders?.pkpaTitle || 'Pengalaman Praktik Kefarmasian'}
+                  onChange={(e) => onUpdateSectionHeaders?.({ pkpaTitle: e.target.value })}
+                  className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] tracking-tight px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full max-w-xl focus:outline-none"
+                  title="Edit Judul Seksi PKPA"
+                />
+              ) : (
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
+                  {sectionHeaders?.pkpaTitle || 'Pengalaman Praktik Kefarmasian'}
+                </h2>
+              )}
+
               {isEditMode && onAddPractical && (
                 <button
                   onClick={onAddPractical}
@@ -64,9 +178,20 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                 </button>
               )}
             </div>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
-              Setiap kartu memiliki Halaman Detail tersendiri dengan rincian tugas komprehensif, kepatuhan regulasi, serta Galeri Dokumentasi Foto PKPA.
-            </p>
+
+            {isEditMode ? (
+              <textarea
+                rows={2}
+                value={sectionHeaders?.pkpaSubtitle || 'Setiap kartu memiliki Halaman Detail tersendiri dengan rincian tugas komprehensif, kepatuhan regulasi, serta Galeri Dokumentasi Foto PKPA.'}
+                onChange={(e) => onUpdateSectionHeaders?.({ pkpaSubtitle: e.target.value })}
+                className="w-full max-w-2xl px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+                title="Edit Keterangan Seksi PKPA"
+              />
+            ) : (
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
+                {sectionHeaders?.pkpaSubtitle || 'Setiap kartu memiliki Halaman Detail tersendiri dengan rincian tugas komprehensif, kepatuhan regulasi, serta Galeri Dokumentasi Foto PKPA.'}
+              </p>
+            )}
           </div>
 
           {/* Filter Pills */}
@@ -89,27 +214,74 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
 
         {/* PKPA Grid Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(filteredPractical || []).map((exp) => (
+          {(filteredPractical || []).map((exp, fIdx) => (
             <div
               key={exp.id}
               onClick={() => onSelectExperience(exp)}
-              className="group glass-futuristic-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl"
+              draggable={isEditMode}
+              onDragStart={(e) => handleDragStartPractical(e, exp.id)}
+              onDragOver={(e) => { if (isEditMode) e.preventDefault(); }}
+              onDrop={(e) => { if (isEditMode) handleDropPractical(e, exp.id); }}
+              className={`group glass-futuristic-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl ${
+                isEditMode ? 'hover:border-amber-400/80' : ''
+              }`}
             >
-              {/* Admin edit & delete buttons on card */}
+              {/* Admin reorder, edit & delete controls on card */}
               {isEditMode && (
-                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+                <div 
+                  className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1 p-1 rounded-full bg-slate-950/95 border border-amber-400/80 shadow-2xl backdrop-blur-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-[10px] font-mono font-bold text-amber-300 px-1.5 select-none">
+                    #{fIdx + 1}
+                  </span>
+
+                  <div 
+                    className="p-1 text-amber-400/80 hover:text-amber-300 cursor-grab active:cursor-grabbing"
+                    title="Tarik untuk geser urutan kartu"
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      movePractical(exp.id, 'prev');
+                    }}
+                    disabled={fIdx === 0}
+                    className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    title="Geser ke Kiri / Sebelumnya"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      movePractical(exp.id, 'next');
+                    }}
+                    disabled={fIdx === filteredPractical.length - 1}
+                    className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    title="Geser ke Kanan / Selanjutnya"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectExperience(exp);
                     }}
-                    className="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-lg hover:scale-110"
+                    className="p-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-md hover:scale-105"
                     title="Edit Pengalaman Ini"
                     aria-label="Edit kartu pengalaman"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-3 h-3" />
                   </button>
+
                   {onDeletePractical && (
                     <button
                       type="button"
@@ -119,11 +291,11 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                           onDeletePractical(exp.id);
                         }
                       }}
-                      className="p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
+                      className="p-1.5 rounded-full bg-red-600 hover:bg-red-500 text-white transition-all cursor-pointer shadow-md hover:scale-105"
                       title="Hapus Kartu Pengalaman Ini"
                       aria-label="Hapus kartu pengalaman"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   )}
                 </div>
@@ -132,7 +304,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               <div className="space-y-4">
                 
                 {/* Instansi Pill Badge */}
-                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-8">
+                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-28">
                   <span className="pill-badge text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/40 bg-sky-50 dark:bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.15)] block truncate text-center">
                     {exp.badgeLabel}
                   </span>
@@ -216,14 +388,36 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
         
         {/* Section Header */}
         <div className="space-y-3 mb-10">
-          <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-400">
+          <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
             <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
-            <span className="text-sky-600 dark:text-sky-400">Kepemimpinan & Asistensi Laboratorium</span>
+            {isEditMode ? (
+              <input
+                type="text"
+                value={sectionHeaders?.orgBadge || 'KEPEMIMPINAN & ASISTENSI LABORATORIUM'}
+                onChange={(e) => onUpdateSectionHeaders?.({ orgBadge: e.target.value })}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono font-semibold uppercase text-sky-700 dark:text-sky-300 w-full max-w-md focus:outline-none"
+                title="Edit Badge Organisasi"
+              />
+            ) : (
+              <span>{sectionHeaders?.orgBadge || 'KEPEMIMPINAN & ASISTENSI LABORATORIUM'}</span>
+            )}
           </div>
+
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
-              Pengalaman Organisasi & Akademik
-            </h2>
+            {isEditMode ? (
+              <input
+                type="text"
+                value={sectionHeaders?.orgTitle || 'Pengalaman Organisasi & Akademik'}
+                onChange={(e) => onUpdateSectionHeaders?.({ orgTitle: e.target.value })}
+                className="text-2xl sm:text-3xl font-bold font-['Outfit'] tracking-tight px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full max-w-xl focus:outline-none"
+                title="Edit Judul Organisasi"
+              />
+            ) : (
+              <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
+                {sectionHeaders?.orgTitle || 'Pengalaman Organisasi & Akademik'}
+              </h2>
+            )}
+
             {isEditMode && onAddOrganization && (
               <button
                 onClick={onAddOrganization}
@@ -234,34 +428,92 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               </button>
             )}
           </div>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
-            Peran kepemimpinan dalam bimbingan ratusan praktikan laboratorium mikrobiologi dan diplomasi kemitraan antarkampus farmasi.
-          </p>
+
+          {isEditMode ? (
+            <textarea
+              rows={2}
+              value={sectionHeaders?.orgSubtitle || 'Peran kepemimpinan dalam bimbingan ratusan praktikan laboratorium mikrobiologi dan diplomasi kemitraan antarkampus farmasi.'}
+              onChange={(e) => onUpdateSectionHeaders?.({ orgSubtitle: e.target.value })}
+              className="w-full max-w-2xl px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+              title="Edit Keterangan Organisasi"
+            />
+          ) : (
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
+              {sectionHeaders?.orgSubtitle || 'Peran kepemimpinan dalam bimbingan ratusan praktikan laboratorium mikrobiologi dan diplomasi kemitraan antarkampus farmasi.'}
+            </p>
+          )}
         </div>
 
         {/* Organization Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(organizationExperiences || []).map((org) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(organizationExperiences || []).map((org, oIdx) => (
             <div
               key={org.id}
               onClick={() => onSelectExperience(org)}
-              className="group glass-futuristic-card rounded-3xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-slate-200 dark:border-white/15 hover:border-sky-500/60 shadow-xl"
+              draggable={isEditMode}
+              onDragStart={(e) => handleDragStartOrganization(e, org.id)}
+              onDragOver={(e) => { if (isEditMode) e.preventDefault(); }}
+              onDrop={(e) => { if (isEditMode) handleDropOrganization(e, org.id); }}
+              className={`group glass-futuristic-card rounded-3xl p-6 flex flex-col justify-between cursor-pointer transform hover:-translate-y-2 transition-all duration-300 relative border border-white/15 hover:border-sky-400/60 shadow-xl ${
+                isEditMode ? 'hover:border-amber-400/80' : ''
+              }`}
             >
-              {/* Admin edit & delete buttons on card */}
+              {/* Admin reorder, edit & delete buttons on card */}
               {isEditMode && (
-                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5">
+                <div 
+                  className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1 p-1 rounded-full bg-slate-950/95 border border-amber-400/80 shadow-2xl backdrop-blur-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-[10px] font-mono font-bold text-amber-300 px-1.5 select-none">
+                    #{oIdx + 1}
+                  </span>
+
+                  <div 
+                    className="p-1 text-amber-400/80 hover:text-amber-300 cursor-grab active:cursor-grabbing"
+                    title="Tarik untuk geser urutan kartu"
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveOrganization(org.id, 'prev');
+                    }}
+                    disabled={oIdx === 0}
+                    className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    title="Geser ke Kiri / Sebelumnya"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      moveOrganization(org.id, 'next');
+                    }}
+                    disabled={oIdx === organizationExperiences.length - 1}
+                    className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                    title="Geser ke Kanan / Selanjutnya"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectExperience(org);
                     }}
-                    className="p-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-lg hover:scale-110"
+                    className="p-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-all cursor-pointer shadow-md hover:scale-105"
                     title="Edit Pengalaman Ini"
                     aria-label="Edit kartu organisasi"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-3 h-3" />
                   </button>
+
                   {onDeleteOrganization && (
                     <button
                       type="button"
@@ -271,11 +523,11 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                           onDeleteOrganization(org.id);
                         }
                       }}
-                      className="p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
+                      className="p-1.5 rounded-full bg-red-600 hover:bg-red-500 text-white transition-all cursor-pointer shadow-md hover:scale-105"
                       title="Hapus Kartu Organisasi Ini"
                       aria-label="Hapus kartu organisasi"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   )}
                 </div>
@@ -284,7 +536,7 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
               <div className="space-y-4">
                 
                 {/* Badge Instansi */}
-                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-8">
+                <div className="pb-3 border-b border-slate-200 dark:border-white/10 pr-28">
                   <span className="pill-badge text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300 border-sky-400/40 bg-sky-50 dark:bg-sky-950/50 shadow-[0_0_10px_rgba(0,112,243,0.15)] block truncate text-center">
                     {org.badgeLabel}
                   </span>
@@ -311,42 +563,47 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                   );
                 })()}
 
-                {/* Institution */}
-                <h3 className="text-xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors">
+                {/* Institution Name */}
+                <h3 className="text-lg sm:text-xl font-bold font-['Outfit'] text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors leading-snug">
                   {org.institution}
                 </h3>
 
-                <div className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between transition-colors">
-                  <span>{org.role}</span>
-                  <span className="font-mono text-xs text-sky-600 dark:text-sky-400">{org.period}</span>
+                {/* Role and Period */}
+                <div className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between transition-colors">
+                  <span className="truncate">{org.role}</span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed transition-colors">
-                  {org.shortSummary}
-                </p>
+                <div className="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {org.period}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                    {org.location}
+                  </span>
+                </div>
 
-                {/* Competencies */}
-                <div className="flex flex-wrap gap-1.5 pt-2">
-                  {(org.competencies || []).map((comp, idx) => (
-                    <span
-                      key={idx}
-                      className="text-[11px] font-mono text-slate-700 dark:text-slate-300 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-white/10"
-                    >
-                      {comp}
-                    </span>
-                  ))}
+                {/* Photo Gallery count badge */}
+                <div className="flex items-center gap-2 pt-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                    <ImageIcon className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                    {(org.galleryPhotos || []).length} Foto Dokumentasi
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span className="text-slate-500 dark:text-slate-400 truncate">{org.categoryLabel || 'Akademik & Organisasi'}</span>
                 </div>
 
               </div>
 
-              {/* Action */}
+              {/* Card Footer Callout */}
               <div className="pt-5 mt-5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
-                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                  Bimbingan & Humas
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  Klik Buka Detail
                 </span>
 
-                <span className="pill-badge text-xs py-1 px-3 text-white group-hover:border-white transition-all flex items-center gap-1">
+                <span className="pill-badge text-xs py-1 px-3 text-white group-hover:border-white group-hover:scale-105 transition-all flex items-center gap-1">
                   <span>Buka Detail</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </span>

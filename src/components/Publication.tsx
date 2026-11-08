@@ -1,17 +1,21 @@
 import React from 'react';
 import { ExternalLink, Award, FileText, Sparkles, Info } from 'lucide-react';
-import { PublicationItem } from '../types/pharmacy';
+import { PublicationItem, SectionHeaders } from '../types/pharmacy';
 
 interface PublicationProps {
   isEditMode?: boolean;
   publication: PublicationItem;
   onUpdatePublication: (updated: PublicationItem) => void;
+  sectionHeaders?: SectionHeaders;
+  onUpdateSectionHeaders?: (updated: Partial<SectionHeaders>) => void;
 }
 
 export const Publication: React.FC<PublicationProps> = ({
   isEditMode = false,
   publication,
   onUpdatePublication,
+  sectionHeaders,
+  onUpdateSectionHeaders,
 }) => {
   return (
     <section className="py-16 lg:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-left relative">
@@ -20,14 +24,48 @@ export const Publication: React.FC<PublicationProps> = ({
       <div className="space-y-3 mb-10">
         <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
           <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
-          <span>Publikasi Ilmiah & Riset Kefarmasian</span>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.pubBadge || 'Publikasi Ilmiah & Riset Kefarmasian'}
+              onChange={(e) => onUpdateSectionHeaders?.({ pubBadge: e.target.value })}
+              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono font-semibold uppercase text-sky-700 dark:text-sky-300 w-full max-w-md focus:outline-none"
+              title="Edit Badge Publikasi"
+            />
+          ) : (
+            <span>{sectionHeaders?.pubBadge || 'Publikasi Ilmiah & Riset Kefarmasian'}</span>
+          )}
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
-          Karya Tulis Ilmiah Terakreditasi
-        </h2>
-        <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
-          Riset eksplorasi bakteri rizosfer asal tanaman porang berpotensi sebagai kandidat senyawa antibiotik alami terhadap patogen saluran pencernaan.
-        </p>
+
+        <div className="flex flex-wrap items-center gap-4">
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.pubTitle || 'Karya Tulis Ilmiah Terakreditasi'}
+              onChange={(e) => onUpdateSectionHeaders?.({ pubTitle: e.target.value })}
+              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] tracking-tight px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full max-w-xl focus:outline-none"
+              title="Edit Judul Publikasi"
+            />
+          ) : (
+            <h2 className="text-3xl sm:text-4xl font-bold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
+              {sectionHeaders?.pubTitle || 'Karya Tulis Ilmiah Terakreditasi'}
+            </h2>
+          )}
+        </div>
+
+        {isEditMode ? (
+          <textarea
+            rows={2}
+            value={sectionHeaders?.pubSubtitle || 'Riset eksplorasi bakteri rizosfer asal tanaman porang berpotensi sebagai kandidat senyawa antibiotik alami terhadap patogen saluran pencernaan.'}
+            onChange={(e) => onUpdateSectionHeaders?.({ pubSubtitle: e.target.value })}
+            className="w-full max-w-2xl px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+            title="Edit Keterangan Publikasi"
+          />
+        ) : (
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
+            {sectionHeaders?.pubSubtitle || 'Riset eksplorasi bakteri rizosfer asal tanaman porang berpotensi sebagai kandidat senyawa antibiotik alami terhadap patogen saluran pencernaan.'}
+          </p>
+        )}
       </div>
 
       {/* Futuristic Card with Glowing Border */}

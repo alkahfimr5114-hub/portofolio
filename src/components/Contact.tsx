@@ -1,17 +1,21 @@
 import React from 'react';
 import { Mail, MapPin, MessageSquare, Linkedin, ExternalLink, ArrowUpRight } from 'lucide-react';
-import { PersonalInfo } from '../types/pharmacy';
+import { PersonalInfo, SectionHeaders } from '../types/pharmacy';
 
 interface ContactProps {
   isEditMode?: boolean;
   personalInfo: PersonalInfo;
   onUpdatePersonalInfo: (info: PersonalInfo) => void;
+  sectionHeaders?: SectionHeaders;
+  onUpdateSectionHeaders?: (updated: Partial<SectionHeaders>) => void;
 }
 
 export const Contact: React.FC<ContactProps> = ({
   isEditMode = false,
   personalInfo,
   onUpdatePersonalInfo,
+  sectionHeaders,
+  onUpdateSectionHeaders,
 }) => {
   const cleanWa = (personalInfo.whatsapp || '').replace(/\D/g, '');
   const whatsappHref = cleanWa ? `https://wa.me/${cleanWa}` : 'https://wa.me/6283196204080';
@@ -33,11 +37,52 @@ export const Contact: React.FC<ContactProps> = ({
         aria-hidden="true" 
       />
 
-      {/* Section Header: Hanya "Kontak Person" */}
-      <div className="mb-10 text-center md:text-left">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
-          Kontak Person
-        </h2>
+      {/* Section Header */}
+      <div className="mb-10 text-left space-y-3">
+        <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
+          <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.contactBadge || 'HUBUNGI SAYA'}
+              onChange={(e) => onUpdateSectionHeaders?.({ contactBadge: e.target.value })}
+              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono font-semibold uppercase text-sky-700 dark:text-sky-300 w-full max-w-md focus:outline-none"
+              title="Edit Badge Kontak"
+            />
+          ) : (
+            <span>{sectionHeaders?.contactBadge || 'HUBUNGI SAYA'}</span>
+          )}
+        </div>
+
+        <div>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.contactTitle || 'Kontak Person'}
+              onChange={(e) => onUpdateSectionHeaders?.({ contactTitle: e.target.value })}
+              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] tracking-tight px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full max-w-xl focus:outline-none"
+              title="Edit Judul Kontak"
+            />
+          ) : (
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
+              {sectionHeaders?.contactTitle || 'Kontak Person'}
+            </h2>
+          )}
+        </div>
+
+        {isEditMode ? (
+          <textarea
+            rows={2}
+            value={sectionHeaders?.contactSubtitle || 'Terbuka untuk peluang karier kefarmasian, kolaborasi riset, dan diskusi profesional.'}
+            onChange={(e) => onUpdateSectionHeaders?.({ contactSubtitle: e.target.value })}
+            className="w-full max-w-2xl px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+            title="Edit Keterangan Kontak"
+          />
+        ) : (
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
+            {sectionHeaders?.contactSubtitle || 'Terbuka untuk peluang karier kefarmasian, kolaborasi riset, dan diskusi profesional.'}
+          </p>
+        )}
       </div>
 
       {/* 3 Main Interactive Contact Person Cards Grid */}

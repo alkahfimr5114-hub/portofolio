@@ -6,12 +6,13 @@ import { Hero } from './components/Hero';
 import { ExperienceOverview } from './components/ExperienceOverview';
 import { ExperienceDetailModal } from './components/ExperienceDetailModal';
 import { Skills } from './components/Skills';
+import { OtherExperiences } from './components/OtherExperiences';
 import { Publication } from './components/Publication';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { CVModal } from './components/CVModal';
 import { AdminPinModal } from './components/AdminPinModal';
-import { ExperienceItem, EducationItem, SkillCategoryItem, CertificateCardItem, PublicationItem, PersonalInfo } from './types/pharmacy';
+import { ExperienceItem, EducationItem, SkillCategoryItem, CertificateCardItem, PublicationItem, PersonalInfo, SectionHeaders } from './types/pharmacy';
 import { 
   PERSONAL_INFO, 
   PROFILE_PHOTO, 
@@ -20,7 +21,8 @@ import {
   ORGANIZATIONAL_EXPERIENCES, 
   SKILL_GROUPS, 
   INITIAL_CERTIFICATES,
-  SCIENTIFIC_PUBLICATION 
+  SCIENTIFIC_PUBLICATION,
+  OTHER_EXPERIENCES 
 } from './data/pharmacyData';
 import { 
   fetchPortfolioSettings, 
@@ -28,6 +30,7 @@ import {
   subscribeToPortfolioChanges, 
   isSupabaseConfigured,
   FullPortfolioData,
+  DEFAULT_SECTION_HEADERS,
   formatImageUrl 
 } from './lib/supabase';
 
@@ -45,6 +48,9 @@ const defaultPracticalMap = new Map<string, ExperienceItem>(
 );
 const defaultOrgMap = new Map<string, ExperienceItem>(
   ORGANIZATIONAL_EXPERIENCES.map((item) => [item.id, item])
+);
+const defaultOtherMap = new Map<string, ExperienceItem>(
+  OTHER_EXPERIENCES.map((item) => [item.id, item])
 );
 
 function mergeWithDefaultPracticalExperience(item: any): ExperienceItem {
@@ -182,6 +188,76 @@ function mergeWithDefaultOrgExperience(item: any): ExperienceItem {
     location: item.location || defaultItem?.location || 'Makassar, Sulawesi Selatan',
     category,
     categoryLabel: item.categoryLabel || defaultItem?.categoryLabel || 'Academic & Organization',
+    shortSummary: item.shortSummary || defaultItem?.shortSummary || fullOverview,
+    fullOverview,
+    image,
+    galleryPhotos,
+    dutiesAndAchievements,
+    regulatoryStandards,
+    competencies,
+    metrics,
+  };
+}
+
+function mergeWithDefaultOtherExperience(item: any): ExperienceItem {
+  if (!item || typeof item !== 'object') {
+    return OTHER_EXPERIENCES[0];
+  }
+  const defaultItem = defaultOtherMap.get(item.id);
+  const category = item.category || defaultItem?.category || 'community';
+  const fallbackImg = DEFAULT_FALLBACK_IMAGES[category] || DEFAULT_FALLBACK_IMAGES.default;
+
+  const fullOverview = (typeof item.fullOverview === 'string' && item.fullOverview.trim().length > 0)
+    ? item.fullOverview
+    : (defaultItem?.fullOverview || item.shortSummary || defaultItem?.shortSummary || 'Pengalaman dan pencapaian lainnya.');
+
+  const dutiesAndAchievements = (Array.isArray(item.dutiesAndAchievements) && item.dutiesAndAchievements.length > 0)
+    ? item.dutiesAndAchievements
+    : (defaultItem?.dutiesAndAchievements || []);
+
+  const regulatoryStandards = (Array.isArray(item.regulatoryStandards) && item.regulatoryStandards.length > 0)
+    ? item.regulatoryStandards
+    : (defaultItem?.regulatoryStandards || []);
+
+  const competencies = (Array.isArray(item.competencies) && item.competencies.length > 0)
+    ? item.competencies
+    : (defaultItem?.competencies || []);
+
+  const metrics = (Array.isArray(item.metrics) && item.metrics.length > 0)
+    ? item.metrics
+    : (defaultItem?.metrics || []);
+
+  let image = item.image;
+  if (!image || typeof image !== 'string' || image.startsWith('/src/assets/')) {
+    image = defaultItem?.image || fallbackImg;
+  }
+
+  const rawPhotos = (Array.isArray(item.galleryPhotos) && item.galleryPhotos.length > 0)
+    ? item.galleryPhotos
+    : (defaultItem?.galleryPhotos || []);
+
+  const galleryPhotos = rawPhotos.map((p: any, idx: number) => {
+    let url = p?.url || '';
+    if (!url || typeof url !== 'string' || url.startsWith('/src/assets/')) {
+      url = defaultItem?.galleryPhotos?.[idx]?.url || fallbackImg;
+    }
+    return {
+      id: p?.id || `photo-${idx}-${Date.now()}`,
+      url,
+      caption: p?.caption || defaultItem?.galleryPhotos?.[idx]?.caption || 'Dokumentasi Kegiatan',
+    };
+  });
+
+  return {
+    ...item,
+    type: 'other',
+    institution: item.institution || defaultItem?.institution || 'Program / Kegiatan',
+    badgeLabel: item.badgeLabel || defaultItem?.badgeLabel || item.institution || 'Pencapaian',
+    role: item.role || defaultItem?.role || 'Koordinator / Pelaksana',
+    period: item.period || defaultItem?.period || '',
+    location: item.location || defaultItem?.location || 'Makassar, Indonesia',
+    category,
+    categoryLabel: item.categoryLabel || defaultItem?.categoryLabel || 'Project & Achievement',
     shortSummary: item.shortSummary || defaultItem?.shortSummary || fullOverview,
     fullOverview,
     image,
@@ -348,6 +424,22 @@ export default function App() {
     return ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience);
   });
 
+  // 5.b Other Experiences (Pencapaian & Pengalaman Lainnya)
+  const [otherExperiences, setOtherExperiences] = useState<ExperienceItem[]>(() => {
+    const saved = localStorage.getItem('alkahfi_other_exp');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(mergeWithDefaultOtherExperience);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return OTHER_EXPERIENCES.map(mergeWithDefaultOtherExperience);
+  });
+
   // 6. Skill Groups (Tools, Lab, Software)
   const [skillGroups, setSkillGroups] = useState<SkillCategoryItem[]>(() => {
     const saved = localStorage.getItem('alkahfi_skills');
@@ -391,6 +483,19 @@ export default function App() {
     return SCIENTIFIC_PUBLICATION;
   });
 
+  // 8. Section Headers (PKPA, Organisasi, Keahlian, Sertifikasi, Publikasi, Kontak)
+  const [sectionHeaders, setSectionHeaders] = useState<SectionHeaders>(() => {
+    const saved = localStorage.getItem('alkahfi_section_headers');
+    if (saved) {
+      try {
+        return { ...DEFAULT_SECTION_HEADERS, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return DEFAULT_SECTION_HEADERS;
+  });
+
   // Cloud Sync state & Critical Protection against visitor device overwrites
   const [isCloudLoaded, setIsCloudLoaded] = useState<boolean>(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
@@ -413,9 +518,11 @@ export default function App() {
             if (cloudData.educationList) setEducationList(cloudData.educationList);
             if (cloudData.practicalExperiences) setPracticalExperiences(cloudData.practicalExperiences.map(mergeWithDefaultPracticalExperience));
             if (cloudData.organizationExperiences) setOrganizationExperiences(cloudData.organizationExperiences.map(mergeWithDefaultOrgExperience));
+            if (cloudData.otherExperiences) setOtherExperiences(cloudData.otherExperiences.map(mergeWithDefaultOtherExperience));
             if (cloudData.skillGroups) setSkillGroups(cloudData.skillGroups);
             if (cloudData.certificates) setCertificates(cloudData.certificates.map(sanitizeCertificate));
             if (cloudData.publication) setPublication(cloudData.publication);
+            if (cloudData.sectionHeaders) setSectionHeaders({ ...DEFAULT_SECTION_HEADERS, ...cloudData.sectionHeaders });
             setCloudSyncStatus('synced');
           } else {
             setCloudSyncStatus('idle');
@@ -441,9 +548,11 @@ export default function App() {
       if (updated.educationList) setEducationList(updated.educationList);
       if (updated.practicalExperiences) setPracticalExperiences(updated.practicalExperiences.map(mergeWithDefaultPracticalExperience));
       if (updated.organizationExperiences) setOrganizationExperiences(updated.organizationExperiences.map(mergeWithDefaultOrgExperience));
+      if (updated.otherExperiences) setOtherExperiences(updated.otherExperiences.map(mergeWithDefaultOtherExperience));
       if (updated.skillGroups) setSkillGroups(updated.skillGroups);
       if (updated.certificates) setCertificates(updated.certificates.map(sanitizeCertificate));
       if (updated.publication) setPublication(updated.publication);
+      if (updated.sectionHeaders) setSectionHeaders((prev) => ({ ...prev, ...updated.sectionHeaders }));
       setCloudSyncStatus('synced');
     });
 
@@ -472,9 +581,11 @@ export default function App() {
       educationList,
       practicalExperiences,
       organizationExperiences,
+      otherExperiences,
       skillGroups,
       certificates,
       publication,
+      sectionHeaders,
     };
 
     setCloudSyncStatus('syncing');
@@ -493,9 +604,11 @@ export default function App() {
     educationList,
     practicalExperiences,
     organizationExperiences,
+    otherExperiences,
     skillGroups,
     certificates,
     publication,
+    sectionHeaders,
   ]);
 
   // 4. Manual "Simpan Permanen ke Cloud" Handler for Admin
@@ -523,12 +636,21 @@ export default function App() {
           url: p.url ? formatImageUrl(p.url) : '',
         })),
       })),
+      otherExperiences: otherExperiences.map(item => ({
+        ...item,
+        image: item.image ? formatImageUrl(item.image) : item.image,
+        galleryPhotos: (item.galleryPhotos || []).map(p => ({
+          ...p,
+          url: p.url ? formatImageUrl(p.url) : '',
+        })),
+      })),
       skillGroups,
       certificates: certificates.map(c => ({
         ...c,
         imageUrl: c.imageUrl ? formatImageUrl(c.imageUrl) : c.imageUrl,
       })),
       publication,
+      sectionHeaders,
     };
 
     try {
@@ -547,6 +669,41 @@ export default function App() {
       setIsManualSaving(false);
       setTimeout(() => setManualSaveMessage(null), 3500);
     }
+  };
+
+  // Handler update Section Headers
+  const handleUpdateSectionHeaders = (newHeaders: Partial<SectionHeaders>) => {
+    setSectionHeaders((prev) => {
+      const updated = { ...prev, ...newHeaders };
+      localStorage.setItem('alkahfi_section_headers', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Reorder handlers
+  const handleReorderPractical = (newOrder: ExperienceItem[]) => {
+    setPracticalExperiences(newOrder);
+    localStorage.setItem('alkahfi_practical_exp_v2', JSON.stringify(newOrder));
+  };
+
+  const handleReorderOrganization = (newOrder: ExperienceItem[]) => {
+    setOrganizationExperiences(newOrder);
+    localStorage.setItem('alkahfi_org_exp', JSON.stringify(newOrder));
+  };
+
+  const handleReorderOther = (newOrder: ExperienceItem[]) => {
+    setOtherExperiences(newOrder);
+    localStorage.setItem('alkahfi_other_exp', JSON.stringify(newOrder));
+  };
+
+  const handleReorderEducation = (newOrder: EducationItem[]) => {
+    setEducationList(newOrder);
+    localStorage.setItem('alkahfi_education', JSON.stringify(newOrder));
+  };
+
+  const handleReorderCertificates = (newOrder: CertificateCardItem[]) => {
+    setCertificates(newOrder);
+    localStorage.setItem('alkahfi_certificates', JSON.stringify(newOrder));
   };
 
   // START / Masuk Portofolio handler
@@ -687,6 +844,48 @@ export default function App() {
     }
   };
 
+  // Other Experiences CRUD
+  const handleAddOtherExperience = () => {
+    const newId = `other-${Date.now()}`;
+    const newOther: ExperienceItem = {
+      id: newId,
+      type: 'other',
+      institution: 'Program / Proyek / Instansi Baru',
+      badgeLabel: 'Pencapaian Baru | Rekam Jejak',
+      role: 'Peran / Tanggung Jawab',
+      programType: 'Pengalaman & Pencapaian Lainnya',
+      period: 'Tahun - Tahun',
+      location: 'Makassar, Indonesia',
+      category: 'community',
+      categoryLabel: 'Project & Achievement',
+      shortSummary: 'Ringkasan singkat kegiatan, kontribusi, atau pencapaian yang diraih.',
+      fullOverview: 'Uraian komprehensif mengenai latar belakang kegiatan, peran spesifik, tantangan yang diselesaikan, dan dampak atau output positif yang dihasilkan.',
+      galleryPhotos: [],
+      dutiesAndAchievements: [
+        'Pelaksanaan tahapan program dan koordinasi lintas pihak.',
+        'Pencapaian output dan evaluasi keberhasilan kegiatan.'
+      ],
+      regulatoryStandards: ['Standar Mutu & Etika Profesional'],
+      competencies: ['Project Management', 'Problem Solving', 'Collaboration'],
+      metrics: [
+        { label: 'Capaian', value: '100%' }
+      ]
+    };
+    const updated = [newOther, ...otherExperiences];
+    setOtherExperiences(updated);
+    localStorage.setItem('alkahfi_other_exp', JSON.stringify(updated));
+    setSelectedExperience(newOther);
+  };
+
+  const handleDeleteOtherExperience = (id: string) => {
+    const updated = otherExperiences.filter(item => item.id !== id);
+    setOtherExperiences(updated);
+    localStorage.setItem('alkahfi_other_exp', JSON.stringify(updated));
+    if (selectedExperience?.id === id) {
+      setSelectedExperience(null);
+    }
+  };
+
   // Update Experience detail
   const handleUpdateExperience = (updatedItem: ExperienceItem) => {
     if (updatedItem.type === 'practical') {
@@ -695,6 +894,12 @@ export default function App() {
       );
       setPracticalExperiences(updatedList);
       localStorage.setItem('alkahfi_practical_exp_v2', JSON.stringify(updatedList));
+    } else if (updatedItem.type === 'other') {
+      const updatedList = otherExperiences.map((item) =>
+        item.id === updatedItem.id ? updatedItem : item
+      );
+      setOtherExperiences(updatedList);
+      localStorage.setItem('alkahfi_other_exp', JSON.stringify(updatedList));
     } else {
       const updatedList = organizationExperiences.map((item) =>
         item.id === updatedItem.id ? updatedItem : item
@@ -798,6 +1003,7 @@ export default function App() {
     localStorage.removeItem('alkahfi_education');
     localStorage.removeItem('alkahfi_practical_exp_v2');
     localStorage.removeItem('alkahfi_org_exp');
+    localStorage.removeItem('alkahfi_other_exp');
     localStorage.removeItem('alkahfi_skills');
     localStorage.removeItem('alkahfi_certificates');
     localStorage.removeItem('alkahfi_publication');
@@ -807,6 +1013,7 @@ export default function App() {
     setEducationList(EDUCATION_DATA);
     setPracticalExperiences(PRACTICAL_EXPERIENCES.map(mergeWithDefaultPracticalExperience));
     setOrganizationExperiences(ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience));
+    setOtherExperiences(OTHER_EXPERIENCES.map(mergeWithDefaultOtherExperience));
     setSkillGroups(SKILL_GROUPS);
     setCertificates(INITIAL_CERTIFICATES.map(sanitizeCertificate));
     setPublication(SCIENTIFIC_PUBLICATION);
@@ -817,6 +1024,7 @@ export default function App() {
       educationList: EDUCATION_DATA,
       practicalExperiences: PRACTICAL_EXPERIENCES.map(mergeWithDefaultPracticalExperience),
       organizationExperiences: ORGANIZATIONAL_EXPERIENCES.map(mergeWithDefaultOrgExperience),
+      otherExperiences: OTHER_EXPERIENCES.map(mergeWithDefaultOtherExperience),
       skillGroups: SKILL_GROUPS,
       certificates: INITIAL_CERTIFICATES.map(sanitizeCertificate),
       publication: SCIENTIFIC_PUBLICATION,
@@ -833,7 +1041,7 @@ export default function App() {
       setShowScrollTop(window.scrollY > 400);
 
       // Section intersection detection
-      const sections = ['home', 'profile', 'tools', 'pkpa-works', 'contact'];
+      const sections = ['home', 'profile', 'pkpa-works', 'other-experiences', 'tools', 'contact'];
       for (const sectionId of sections) {
         const el = document.getElementById(sectionId);
         if (el) {
@@ -867,7 +1075,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const allExperiences = [...practicalExperiences, ...organizationExperiences];
+  const allExperiences = [...practicalExperiences, ...organizationExperiences, ...otherExperiences];
 
   return (
     <div className="min-h-screen relative font-['Plus_Jakarta_Sans'] bg-slate-50 text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-300 selection:bg-sky-400 selection:text-black">
@@ -962,6 +1170,7 @@ export default function App() {
           onAddEducation={handleAddEducation}
           onDeleteEducation={handleDeleteEducation}
           onUpdateEducation={handleUpdateEducation}
+          onReorderEducation={handleReorderEducation}
           hasEntered={hasEntered}
           onStartPortfolio={handleStartPortfolio}
         />
@@ -980,10 +1189,26 @@ export default function App() {
                 onDeletePractical={handleDeletePracticalExperience}
                 onAddOrganization={handleAddOrganizationExperience}
                 onDeleteOrganization={handleDeleteOrganizationExperience}
+                sectionHeaders={sectionHeaders}
+                onUpdateSectionHeaders={handleUpdateSectionHeaders}
+                onReorderPractical={handleReorderPractical}
+                onReorderOrganization={handleReorderOrganization}
               />
             </div>
 
-            {/* 04. Tools, Keahlian & Sertifikasi */}
+            {/* 04. Pengalaman dan Pencapaian Lainnya */}
+            <OtherExperiences
+              otherExperiences={otherExperiences}
+              onSelectExperience={(item) => setSelectedExperience(item)}
+              isEditMode={isEditMode}
+              onAddOther={handleAddOtherExperience}
+              onDeleteOther={handleDeleteOtherExperience}
+              sectionHeaders={sectionHeaders}
+              onUpdateSectionHeaders={handleUpdateSectionHeaders}
+              onReorderOther={handleReorderOther}
+            />
+
+            {/* 05. Tools, Keahlian & Sertifikasi */}
             <Skills
               isEditMode={isEditMode}
               skillGroups={skillGroups}
@@ -995,6 +1220,9 @@ export default function App() {
               onAddCertificate={handleAddCertificate}
               onUpdateCertificate={handleUpdateCertificate}
               onDeleteCertificate={handleDeleteCertificate}
+              sectionHeaders={sectionHeaders}
+              onUpdateSectionHeaders={handleUpdateSectionHeaders}
+              onReorderCertificates={handleReorderCertificates}
             />
 
             {/* 05. Publikasi Ilmiah */}
@@ -1002,6 +1230,8 @@ export default function App() {
               isEditMode={isEditMode}
               publication={publication}
               onUpdatePublication={handleUpdatePublication}
+              sectionHeaders={sectionHeaders}
+              onUpdateSectionHeaders={handleUpdateSectionHeaders}
             />
 
             {/* 06. Kontak, WhatsApp, dan Formulir Pesan */}
@@ -1009,6 +1239,8 @@ export default function App() {
               isEditMode={isEditMode}
               personalInfo={personalInfo}
               onUpdatePersonalInfo={handleUpdatePersonalInfo}
+              sectionHeaders={sectionHeaders}
+              onUpdateSectionHeaders={handleUpdateSectionHeaders}
             />
           </div>
         )}

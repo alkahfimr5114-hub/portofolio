@@ -8,7 +8,7 @@ export interface GalleryPhoto {
 
 export interface ExperienceItem {
   id: string;
-  type: 'practical' | 'organization';
+  type: 'practical' | 'organization' | 'other';
   institution: string;
   badgeLabel: string; // e.g. "RSUD Andi Makkasau | Hospital Pharmacy"
   role: string;
@@ -89,4 +89,28 @@ export interface PersonalInfo {
   linkedin: string;
   linkedinUrl: string;
   location: string;
+}
+
+export interface SectionHeaders {
+  pkpaBadge: string;
+  pkpaTitle: string;
+  pkpaSubtitle: string;
+  orgBadge: string;
+  orgTitle: string;
+  orgSubtitle: string;
+  skillsBadge: string;
+  skillsTitle: string;
+  skillsSubtitle: string;
+  certBadge: string;
+  certTitle: string;
+  certSubtitle: string;
+  pubBadge: string;
+  pubTitle: string;
+  pubSubtitle: string;
+  contactBadge: string;
+  contactTitle: string;
+  contactSubtitle: string;
+  otherBadge: string;
+  otherTitle: string;
+  otherSubtitle: string;
 }

@@ -442,4 +442,64 @@ export const SCIENTIFIC_PUBLICATION: PublicationItem = {
   keywords: ['Amorphophallus muelleri Blume', 'Bakteri Rizosfer', 'Antibakteri Alami', 'Mikrobiologi Farmasi', 'Patogen Saluran Pencernaan']
 };
 
-export const ALL_EXPERIENCES = [...PRACTICAL_EXPERIENCES, ...ORGANIZATIONAL_EXPERIENCES];
+export const OTHER_EXPERIENCES: ExperienceItem[] = [
+  {
+    id: 'other-kkn-tematik',
+    type: 'other',
+    institution: 'Program Pengabdian Masyarakat & Edukasi Kesehatan Tematik',
+    badgeLabel: 'Pengabdian Masyarakat | Community Engagement',
+    role: 'Koordinator Farmasi Lapangan & Penyuluhan DAGUSIBU',
+    programType: 'Program Kolaboratif',
+    period: 'Jul 2024 - Agu 2024',
+    location: 'Sulawesi Selatan',
+    category: 'community',
+    categoryLabel: 'Community Development',
+    shortSummary: 'Edukasi DAGUSIBU (Dapatkan, Gunakan, Simpan, Buang) obat secara bijak kepada 200+ warga desa binaan.',
+    fullOverview: 'Inisiatif pemberdayaan masyarakat pedesaan terkait pemahaman dasar pengelolaan obat mandiri (swamedikasi yang benar). Mengedukasi bahaya penggunaan antibiotik tanpa resep, pembuangan limbah sediaan sirup & antibiotik kedaluwarsa, serta pemeriksaan tanda-tanda vital gratis.',
+    image: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?q=80&w=1200&auto=format&fit=crop',
+    galleryPhotos: [
+      { id: 'other-1-1', url: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?q=80&w=1200&auto=format&fit=crop', caption: 'Edukasi DAGUSIBU dan Cek Kesehatan Gratis untuk Warga Desa' }
+    ],
+    dutiesAndAchievements: [
+      'Memimpin tim penyuluhan edukasi DAGUSIBU bagi 200+ kepala keluarga dan lansia.',
+      'Melaksanakan skrining tekanan darah dan glukosa darah sewaktu.',
+      'Menyusun booklet panduan penggunaan obat rumahan yang aman.'
+    ],
+    regulatoryStandards: ['Gerakan Masyarakat Cerdas Menggunakan Obat (GeMa CerMO)', 'Pedoman Swamedikasi BPOM RI'],
+    competencies: ['Penyuluhan Kesehatan Publik', 'Edukasi DAGUSIBU', 'Pemeriksaan Kesehatan Skrining', 'Komunikasi Komunitas'],
+    metrics: [
+      { label: 'Penerima Manfaat', value: '200+ Warga' },
+      { label: 'Inisiatif', value: 'GeMa CerMO' }
+    ]
+  },
+  {
+    id: 'other-seminar-nasional',
+    type: 'other',
+    institution: 'Simposium & Lokakarya Riset Farmasi Klinis Nasional',
+    badgeLabel: 'Simposium Nasional | Research Presentation',
+    role: 'Presenter Riset Ilmiah & Peserta Delegasi',
+    programType: 'Simposium Ilmiah',
+    period: 'Okt 2024',
+    location: 'Makassar, Indonesia',
+    category: 'hospital',
+    categoryLabel: 'Scientific Presentation',
+    shortSummary: 'Presentasi hasil riset potensi isolat mikrobiologi rizosfer pada temu ilmiah kefarmasian nasional.',
+    fullOverview: 'Berpartisipasi aktif dalam mempresentasikan temuan riset antibakteri tanaman porang di hadapan akademisi, praktisi farmasi rumah sakit, dan peneliti dari berbagai institusi farmasi terkemuka di Indonesia.',
+    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200&auto=format&fit=crop',
+    galleryPhotos: [
+      { id: 'other-2-1', url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200&auto=format&fit=crop', caption: 'Sesi Diskusi & Presentasi Ilmiah Simposium Kefarmasian Nasional' }
+    ],
+    dutiesAndAchievements: [
+      'Mempresentasikan abstrak riset mikrobiologi sains farmasi.',
+      'Terlibat dalam forum diskusi pengembangan riset bahan alam dan formulasi terapeutik.'
+    ],
+    regulatoryStandards: ['Standar Etika Penelitian Kesehatan Nasional', 'Pedoman Penulisan Ilmiah Terakreditasi'],
+    competencies: ['Presentasi Ilmiah', 'Diseminasi Riset', 'Networking Akademik', 'Farmakoterapi Klinis'],
+    metrics: [
+      { label: 'Forum', value: 'Simposium Nasional' },
+      { label: 'Fokus', value: 'Riset Antibakteri' }
+    ]
+  }
+];
+
+export const ALL_EXPERIENCES = [...PRACTICAL_EXPERIENCES, ...ORGANIZATIONAL_EXPERIENCES, ...OTHER_EXPERIENCES];

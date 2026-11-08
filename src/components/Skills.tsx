@@ -13,9 +13,12 @@ import {
   Building2,
   FileCheck,
   Loader2,
-  Cloud
+  Cloud,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical
 } from 'lucide-react';
-import { SkillCategoryItem, CertificateCardItem } from '../types/pharmacy';
+import { SkillCategoryItem, CertificateCardItem, SectionHeaders } from '../types/pharmacy';
 import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
 
 interface SkillsProps {
@@ -29,6 +32,9 @@ interface SkillsProps {
   onAddCertificate: () => void;
   onUpdateCertificate: (updated: CertificateCardItem) => void;
   onDeleteCertificate: (id: string) => void;
+  sectionHeaders?: SectionHeaders;
+  onUpdateSectionHeaders?: (updated: Partial<SectionHeaders>) => void;
+  onReorderCertificates?: (newOrder: CertificateCardItem[]) => void;
 }
 
 export const Skills: React.FC<SkillsProps> = ({
@@ -42,12 +48,45 @@ export const Skills: React.FC<SkillsProps> = ({
   onAddCertificate,
   onUpdateCertificate,
   onDeleteCertificate,
+  sectionHeaders,
+  onUpdateSectionHeaders,
+  onReorderCertificates,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [newBadgeText, setNewBadgeText] = useState<{ [key: string]: string }>({});
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [uploadingCertId, setUploadingCertId] = useState<string | null>(null);
+
+  const moveCertificate = (index: number, direction: 'prev' | 'next') => {
+    const targetIdx = direction === 'prev' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= certificates.length) return;
+    const newOrder = [...certificates];
+    const [moved] = newOrder.splice(index, 1);
+    newOrder.splice(targetIdx, 0, moved);
+    onReorderCertificates?.(newOrder);
+  };
+
+  const handleDragStartCert = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', `cert:${id}`);
+  };
+
+  const handleDropCert = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('cert:')) return;
+    const draggedId = data.replace('cert:', '');
+    if (!draggedId || draggedId === targetId) return;
+
+    const fromIdx = certificates.findIndex((item) => item.id === draggedId);
+    const toIdx = certificates.findIndex((item) => item.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const newOrder = [...certificates];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+    onReorderCertificates?.(newOrder);
+  };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
@@ -140,12 +179,34 @@ export const Skills: React.FC<SkillsProps> = ({
       <div className="space-y-3 mb-10">
         <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider uppercase text-sky-600 dark:text-sky-400">
           <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-sky-400 shadow-[0_0_8px_#00d4ff]" />
-          <span>Tools, Laboratorium & Sertifikasi</span>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.skillsBadge || 'Tools, Laboratorium & Sertifikasi'}
+              onChange={(e) => onUpdateSectionHeaders?.({ skillsBadge: e.target.value })}
+              className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs font-mono font-semibold uppercase text-sky-700 dark:text-sky-300 w-full max-w-md focus:outline-none"
+              title="Edit Badge Keahlian"
+            />
+          ) : (
+            <span>{sectionHeaders?.skillsBadge || 'Tools, Laboratorium & Sertifikasi'}</span>
+          )}
         </div>
+
         <div className="flex flex-wrap items-center gap-4">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
-            Keahlian & Sertifikasi
-          </h2>
+          {isEditMode ? (
+            <input
+              type="text"
+              value={sectionHeaders?.skillsTitle || 'Keahlian & Sertifikasi'}
+              onChange={(e) => onUpdateSectionHeaders?.({ skillsTitle: e.target.value })}
+              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-['Outfit'] tracking-tight px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full max-w-xl focus:outline-none"
+              title="Edit Judul Keahlian"
+            />
+          ) : (
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-['Outfit'] tracking-tight text-slate-900 dark:text-white transition-colors">
+              {sectionHeaders?.skillsTitle || 'Keahlian & Sertifikasi'}
+            </h2>
+          )}
+
           {isEditMode && onAddCategory && (
             <button
               onClick={() => setShowAddCategory(!showAddCategory)}
@@ -156,6 +217,20 @@ export const Skills: React.FC<SkillsProps> = ({
             </button>
           )}
         </div>
+
+        {isEditMode ? (
+          <textarea
+            rows={2}
+            value={sectionHeaders?.skillsSubtitle || 'Instrumen analisis, pengawasan mutu, perangkat lunak farmasi, dan kepatuhan sistem regulasi.'}
+            onChange={(e) => onUpdateSectionHeaders?.({ skillsSubtitle: e.target.value })}
+            className="w-full max-w-2xl px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-amber-400 text-xs sm:text-sm text-slate-800 dark:text-slate-200 focus:outline-none"
+            title="Edit Keterangan Seksi Keahlian"
+          />
+        ) : (
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed transition-colors">
+            {sectionHeaders?.skillsSubtitle || 'Instrumen analisis, pengawasan mutu, perangkat lunak farmasi, dan kepatuhan sistem regulasi.'}
+          </p>
+        )}
 
         {isEditMode && showAddCategory && (
           <form onSubmit={handleAddCategorySubmit} className="pt-2 flex flex-wrap gap-2 max-w-md">
@@ -288,17 +363,38 @@ export const Skills: React.FC<SkillsProps> = ({
         {showCertificates && (
           <div className="space-y-6 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-white/10 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-400/40 text-sky-600 dark:text-sky-400 shadow-sm">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2.5 rounded-2xl bg-sky-100 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-400/40 text-sky-600 dark:text-sky-400 shadow-sm shrink-0">
                   <Award className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
-                    Sertifikasi & Kredensial Profesi
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
-                    Kartu sertifikasi terverifikasi dengan tautan resmi ke dokumen asli.
-                  </p>
+                <div className="flex-1 space-y-1">
+                  {isEditMode ? (
+                    <div className="space-y-1 max-w-xl">
+                      <input
+                        type="text"
+                        value={sectionHeaders?.certTitle || 'Sertifikasi & Kredensial Profesi'}
+                        onChange={(e) => onUpdateSectionHeaders?.({ certTitle: e.target.value })}
+                        className="text-lg sm:text-xl font-bold font-['Outfit'] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 text-slate-900 dark:text-white w-full focus:outline-none"
+                        title="Edit Judul Sertifikasi"
+                      />
+                      <input
+                        type="text"
+                        value={sectionHeaders?.certSubtitle || 'Kartu sertifikasi terverifikasi dengan tautan resmi ke dokumen asli.'}
+                        onChange={(e) => onUpdateSectionHeaders?.({ certSubtitle: e.target.value })}
+                        className="text-xs text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-amber-400 w-full focus:outline-none font-mono"
+                        title="Edit Keterangan Sertifikasi"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-xl sm:text-2xl font-bold font-['Outfit'] text-slate-900 dark:text-white transition-colors">
+                        {sectionHeaders?.certTitle || 'Sertifikasi & Kredensial Profesi'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                        {sectionHeaders?.certSubtitle || 'Kartu sertifikasi terverifikasi dengan tautan resmi ke dokumen asli.'}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -306,7 +402,7 @@ export const Skills: React.FC<SkillsProps> = ({
                 <button
                   type="button"
                   onClick={onAddCertificate}
-                  className="px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-pointer self-start sm:self-auto"
+                  className="px-4 py-2 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-pointer self-start sm:self-auto shrink-0"
                 >
                   <Plus className="w-4 h-4 text-black" />
                   <span>+ Tambah Kartu Sertifikat</span>
@@ -316,25 +412,74 @@ export const Skills: React.FC<SkillsProps> = ({
 
             {/* Grid Kartu Sertifikasi */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(certificates || []).map((cert) => (
+              {(certificates || []).map((cert, cIdx) => (
                 <div
                   key={cert.id}
-                  className="group relative rounded-3xl glass-futuristic-card p-6 border border-slate-200 dark:border-white/15 hover:border-sky-500/60 transition-all duration-300 flex flex-col justify-between shadow-xl hover:-translate-y-1.5"
+                  draggable={isEditMode}
+                  onDragStart={(e) => handleDragStartCert(e, cert.id)}
+                  onDragOver={(e) => { if (isEditMode) e.preventDefault(); }}
+                  onDrop={(e) => { if (isEditMode) handleDropCert(e, cert.id); }}
+                  className={`group relative rounded-3xl glass-futuristic-card p-6 border border-slate-200 dark:border-white/15 hover:border-sky-500/60 transition-all duration-300 flex flex-col justify-between shadow-xl hover:-translate-y-1.5 ${
+                    isEditMode ? 'hover:border-amber-400/80' : ''
+                  }`}
                 >
-                  {/* Delete button in admin mode */}
+                  {/* Admin controls: Reorder & Delete */}
                   {isEditMode && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`Hapus sertifikat "${cert.title}"?`)) {
-                          onDeleteCertificate(cert.id);
-                        }
-                      }}
-                      className="absolute top-4 right-4 z-20 p-2 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer shadow-lg hover:scale-110"
-                      title="Hapus Sertifikat"
+                    <div 
+                      className="absolute top-3.5 right-3.5 z-20 flex items-center gap-1 p-1 rounded-full bg-slate-950/95 border border-amber-400/80 shadow-2xl backdrop-blur-md"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      <span className="text-[10px] font-mono font-bold text-amber-300 px-1.5 select-none">
+                        #{cIdx + 1}
+                      </span>
+
+                      <div 
+                        className="p-1 text-amber-400/80 hover:text-amber-300 cursor-grab active:cursor-grabbing"
+                        title="Tarik untuk geser urutan sertifikat"
+                      >
+                        <GripVertical className="w-3.5 h-3.5" />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveCertificate(cIdx, 'prev');
+                        }}
+                        disabled={cIdx === 0}
+                        className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title="Geser ke Kiri / Sebelumnya"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveCertificate(cIdx, 'next');
+                        }}
+                        disabled={cIdx === certificates.length - 1}
+                        className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                        title="Geser ke Kanan / Selanjutnya"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Hapus sertifikat "${cert.title}"?`)) {
+                            onDeleteCertificate(cert.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-full bg-red-600 hover:bg-red-500 text-white transition-all cursor-pointer shadow-md hover:scale-105"
+                        title="Hapus Sertifikat"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
 
                   <div className="space-y-4">

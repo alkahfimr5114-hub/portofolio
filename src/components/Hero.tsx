@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDown, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase, Loader2, Cloud } from 'lucide-react';
+import { ArrowDown, ArrowUp, Edit3, Camera, Plus, Trash2, Upload, Link as LinkIcon, Check, Play, Briefcase, Loader2, Cloud, GripVertical } from 'lucide-react';
 import { EducationItem, PersonalInfo } from '../types/pharmacy';
 import { PROFILE_PHOTO } from '../data/pharmacyData';
 import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
@@ -18,6 +18,7 @@ interface HeroProps {
   onAddEducation: () => void;
   onDeleteEducation: (id: string) => void;
   onUpdateEducation: (item: EducationItem) => void;
+  onReorderEducation?: (newOrder: EducationItem[]) => void;
   hasEntered: boolean;
   onStartPortfolio: () => void;
 }
@@ -34,6 +35,7 @@ export const Hero: React.FC<HeroProps> = ({
   onAddEducation,
   onDeleteEducation,
   onUpdateEducation,
+  onReorderEducation,
   hasEntered,
   onStartPortfolio,
 }) => {
@@ -85,6 +87,36 @@ export const Hero: React.FC<HeroProps> = ({
       setPhotoUrlTemp('');
       setShowPhotoUrlInput(false);
     }
+  };
+
+  const moveEducation = (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= educationList.length) return;
+    const newOrder = [...educationList];
+    const [moved] = newOrder.splice(index, 1);
+    newOrder.splice(targetIdx, 0, moved);
+    onReorderEducation?.(newOrder);
+  };
+
+  const handleDragStartEdu = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', `edu:${id}`);
+  };
+
+  const handleDropEdu = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('edu:')) return;
+    const draggedId = data.replace('edu:', '');
+    if (!draggedId || draggedId === targetId) return;
+
+    const fromIdx = educationList.findIndex((item) => item.id === draggedId);
+    const toIdx = educationList.findIndex((item) => item.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const newOrder = [...educationList];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+    onReorderEducation?.(newOrder);
   };
 
   return (
@@ -301,26 +333,78 @@ export const Hero: React.FC<HeroProps> = ({
 
                 {/* Dynamic Education List */}
                 <div className="space-y-4">
-                  {educationList.map((edu) => (
-                    <div key={edu.id} className="relative p-3 rounded-2xl glass-futuristic-card border border-white/10 group space-y-2 text-left">
-                      {/* Delete button in admin mode */}
+                  {educationList.map((edu, eduIdx) => (
+                    <div 
+                      key={edu.id} 
+                      draggable={isEditMode}
+                      onDragStart={(e) => handleDragStartEdu(e, edu.id)}
+                      onDragOver={(e) => { if (isEditMode) e.preventDefault(); }}
+                      onDrop={(e) => { if (isEditMode) handleDropEdu(e, edu.id); }}
+                      className={`relative p-3 rounded-2xl glass-futuristic-card border border-white/10 group space-y-2 text-left transition-all ${
+                        isEditMode ? 'hover:border-amber-400/70' : ''
+                      }`}
+                    >
+                      {/* Admin controls: Reorder & Delete */}
                       {isEditMode && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`Hapus data pendidikan "${edu.institution}"?`)) {
-                              onDeleteEducation(edu.id);
-                            }
-                          }}
-                          className="absolute top-3 right-3 p-1.5 rounded-full bg-red-600/80 hover:bg-red-500 text-white transition-all cursor-pointer"
-                          title="Hapus Pendidikan"
+                        <div 
+                          className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 p-1 rounded-full bg-slate-950/95 border border-amber-400/80 shadow-xl backdrop-blur-md"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                          <span className="text-[10px] font-mono font-bold text-amber-300 px-1.5 select-none">
+                            #{eduIdx + 1}
+                          </span>
+
+                          <div 
+                            className="p-1 text-amber-400/80 hover:text-amber-300 cursor-grab active:cursor-grabbing"
+                            title="Tarik untuk geser urutan pendidikan"
+                          >
+                            <GripVertical className="w-3 h-3" />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveEducation(eduIdx, 'up');
+                            }}
+                            disabled={eduIdx === 0}
+                            className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                            title="Geser ke Atas"
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              moveEducation(eduIdx, 'down');
+                            }}
+                            disabled={eduIdx === educationList.length - 1}
+                            className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all cursor-pointer"
+                            title="Geser ke Bawah"
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Hapus data pendidikan "${edu.institution}"?`)) {
+                                onDeleteEducation(edu.id);
+                              }
+                            }}
+                            className="p-1 rounded-full bg-red-600/90 hover:bg-red-500 text-white transition-all cursor-pointer ml-0.5"
+                            title="Hapus Pendidikan"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
 
                       {isEditMode ? (
-                        <div className="space-y-2 pr-8">
+                        <div className="space-y-2 pr-32">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
                               <label className="text-[10px] font-mono text-amber-300 block">Institusi:</label>
