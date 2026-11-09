@@ -254,7 +254,12 @@ export const OtherExperiences: React.FC<OtherExperiencesProps> = ({
                       <img
                         src={coverUrl}
                         alt={exp.galleryPhotos?.[0]?.caption || exp.institution}
-                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                        style={{
+                          objectFit: exp.coverFit || 'cover',
+                          objectPosition: `${exp.coverPositionX ?? 50}% ${exp.coverPositionY ?? 50}%`,
+                          transform: `scale(${exp.coverScale ?? 1})`,
+                        }}
+                        className="w-full h-full rounded-xl transition-all duration-300"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />

@@ -3,7 +3,7 @@ import {
   X, Calendar, MapPin, Building, CheckCircle2, 
   ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, Plus, 
   Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud,
-  Star, GripVertical 
+  Star, GripVertical, Sliders, RotateCcw 
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
 import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
@@ -417,6 +417,136 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                     placeholder="https://images.unsplash.com/... atau link Google Drive"
                     className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
                   />
+                </div>
+
+                {/* Pengaturan Ukuran, Zoom & Posisi Thumbnail Sampul Kartu Depan */}
+                <div className="sm:col-span-2 pt-3 border-t border-amber-500/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-amber-300 font-bold flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span>Atur Tampilan Sampul Kartu Depan (Ukuran, Zoom & Posisi):</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateExperience({
+                        ...experience,
+                        coverFit: 'cover',
+                        coverScale: 1,
+                        coverPositionX: 50,
+                        coverPositionY: 50,
+                      })}
+                      className="text-[10px] font-mono text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer flex items-center gap-1"
+                      title="Kembalikan ke pengaturan default"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+
+                  {/* Pratinjau Langsung (Live Preview) Bingkai Sampul Kartu */}
+                  {(experience.image || photos[0]?.url) && (
+                    <div className="flex flex-col sm:flex-row gap-4 items-center p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                      <div className="w-48 h-28 rounded-xl overflow-hidden bg-slate-900 border border-amber-400/50 relative shrink-0">
+                        <img
+                          src={experience.image || photos[0]?.url}
+                          alt="Pratinjau Sampul"
+                          style={{
+                            objectFit: experience.coverFit || 'cover',
+                            objectPosition: `${experience.coverPositionX ?? 50}% ${experience.coverPositionY ?? 50}%`,
+                            transform: `scale(${experience.coverScale ?? 1})`,
+                          }}
+                          className="w-full h-full transition-all duration-200"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-mono text-amber-300 border border-amber-400/40">
+                          Pratinjau Kartu
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 w-full space-y-2.5 text-xs font-mono">
+                        {/* Pilihan Fit: Cover vs Contain */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400">Mode Gambar:</span>
+                          <div className="inline-flex rounded-lg p-0.5 bg-slate-900 border border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateExperience({ ...experience, coverFit: 'cover' })}
+                              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                (experience.coverFit || 'cover') === 'cover'
+                                  ? 'bg-amber-500 text-black shadow'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Cover (Penuh)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateExperience({ ...experience, coverFit: 'contain' })}
+                              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                experience.coverFit === 'contain'
+                                  ? 'bg-amber-500 text-black shadow'
+                                  : 'text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              Contain (Pas)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Slider Zoom / Scale */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-slate-400 text-[11px]">
+                            <span>Zoom / Ukuran:</span>
+                            <span className="text-amber-300 font-bold">{Math.round((experience.coverScale ?? 1) * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.5"
+                            max="2.5"
+                            step="0.05"
+                            value={experience.coverScale ?? 1}
+                            onChange={(e) => onUpdateExperience({ ...experience, coverScale: parseFloat(e.target.value) })}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                          />
+                        </div>
+
+                        {/* Sliders Posisi X & Y */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-slate-400 text-[11px]">
+                              <span>Posisi X:</span>
+                              <span className="text-amber-300 font-bold">{experience.coverPositionX ?? 50}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={experience.coverPositionX ?? 50}
+                              onChange={(e) => onUpdateExperience({ ...experience, coverPositionX: parseInt(e.target.value, 10) })}
+                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-slate-400 text-[11px]">
+                              <span>Posisi Y:</span>
+                              <span className="text-amber-300 font-bold">{experience.coverPositionY ?? 50}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={experience.coverPositionY ?? 50}
+                              onChange={(e) => onUpdateExperience({ ...experience, coverPositionY: parseInt(e.target.value, 10) })}
+                              className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                            />
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

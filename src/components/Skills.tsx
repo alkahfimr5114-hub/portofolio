@@ -16,7 +16,9 @@ import {
   Cloud,
   ChevronLeft,
   ChevronRight,
-  GripVertical
+  GripVertical,
+  Sliders,
+  RotateCcw
 } from 'lucide-react';
 import { SkillCategoryItem, CertificateCardItem, SectionHeaders } from '../types/pharmacy';
 import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
@@ -494,7 +496,12 @@ export const Skills: React.FC<SkillsProps> = ({
                               e.currentTarget.src = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop';
                             }
                           }}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          style={{
+                            objectFit: cert.coverFit || 'cover',
+                            objectPosition: `${cert.coverPositionX ?? 50}% ${cert.coverPositionY ?? 50}%`,
+                            transform: `scale(${cert.coverScale ?? 1})`,
+                          }}
+                          className="w-full h-full rounded-2xl transition-all duration-300"
                           referrerPolicy="no-referrer"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
@@ -551,6 +558,113 @@ export const Skills: React.FC<SkillsProps> = ({
                             className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-white"
                           />
                         </div>
+
+                        {/* Pengaturan Ukuran, Zoom & Posisi Cover Sertifikat */}
+                        {cert.imageUrl && (
+                          <div className="pt-2 border-t border-amber-500/20 space-y-2">
+                            <div className="flex items-center justify-between text-[11px] font-mono text-amber-300 font-bold">
+                              <span className="flex items-center gap-1">
+                                <Sliders className="w-3 h-3" />
+                                <span>Atur Tampilan Sampul:</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => onUpdateCertificate({
+                                  ...cert,
+                                  coverFit: 'cover',
+                                  coverScale: 1,
+                                  coverPositionX: 50,
+                                  coverPositionY: 50,
+                                })}
+                                className="text-[10px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                                title="Reset tampilan sampul"
+                              >
+                                <RotateCcw className="w-2.5 h-2.5" />
+                                <span>Reset</span>
+                              </button>
+                            </div>
+
+                            {/* Fit Mode */}
+                            <div className="flex items-center justify-between text-xs font-mono">
+                              <span className="text-[10px] text-slate-400">Mode:</span>
+                              <div className="inline-flex rounded-lg p-0.5 bg-slate-900 border border-slate-700">
+                                <button
+                                  type="button"
+                                  onClick={() => onUpdateCertificate({ ...cert, coverFit: 'cover' })}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+                                    (cert.coverFit || 'cover') === 'cover'
+                                      ? 'bg-amber-500 text-black shadow'
+                                      : 'text-slate-400 hover:text-white'
+                                  }`}
+                                >
+                                  Cover
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onUpdateCertificate({ ...cert, coverFit: 'contain' })}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all cursor-pointer ${
+                                    cert.coverFit === 'contain'
+                                      ? 'bg-amber-500 text-black shadow'
+                                      : 'text-slate-400 hover:text-white'
+                                  }`}
+                                >
+                                  Contain
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Zoom Scale */}
+                            <div className="space-y-0.5">
+                              <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                                <span>Zoom:</span>
+                                <span className="text-amber-300 font-bold">{Math.round((cert.coverScale ?? 1) * 100)}%</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="0.5"
+                                max="2.5"
+                                step="0.05"
+                                value={cert.coverScale ?? 1}
+                                onChange={(e) => onUpdateCertificate({ ...cert, coverScale: parseFloat(e.target.value) })}
+                                className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-amber-400"
+                              />
+                            </div>
+
+                            {/* Position X and Y */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-0.5">
+                                <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                                  <span>Posisi X:</span>
+                                  <span className="text-amber-300 font-bold">{cert.coverPositionX ?? 50}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={cert.coverPositionX ?? 50}
+                                  onChange={(e) => onUpdateCertificate({ ...cert, coverPositionX: parseInt(e.target.value, 10) })}
+                                  className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-amber-400"
+                                />
+                              </div>
+                              <div className="space-y-0.5">
+                                <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                                  <span>Posisi Y:</span>
+                                  <span className="text-amber-300 font-bold">{cert.coverPositionY ?? 50}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={cert.coverPositionY ?? 50}
+                                  onChange={(e) => onUpdateCertificate({ ...cert, coverPositionY: parseInt(e.target.value, 10) })}
+                                  className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-amber-400"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

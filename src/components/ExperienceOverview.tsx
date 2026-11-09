@@ -319,7 +319,12 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                       <img
                         src={coverUrl}
                         alt={exp.galleryPhotos?.[0]?.caption || exp.institution}
-                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                        style={{
+                          objectFit: exp.coverFit || 'cover',
+                          objectPosition: `${exp.coverPositionX ?? 50}% ${exp.coverPositionY ?? 50}%`,
+                          transform: `scale(${exp.coverScale ?? 1})`,
+                        }}
+                        className="w-full h-full rounded-xl transition-all duration-300"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />
@@ -551,7 +556,12 @@ export const ExperienceOverview: React.FC<ExperienceOverviewProps> = ({
                       <img
                         src={coverUrl}
                         alt={org.galleryPhotos?.[0]?.caption || org.institution}
-                        className="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-500"
+                        style={{
+                          objectFit: org.coverFit || 'cover',
+                          objectPosition: `${org.coverPositionX ?? 50}% ${org.coverPositionY ?? 50}%`,
+                          transform: `scale(${org.coverScale ?? 1})`,
+                        }}
+                        className="w-full h-full rounded-xl transition-all duration-300"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60" />

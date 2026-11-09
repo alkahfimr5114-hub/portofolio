@@ -126,6 +126,10 @@ function mergeWithDefaultPracticalExperience(item: any): ExperienceItem {
     regulatoryStandards,
     competencies,
     metrics,
+    coverFit: item.coverFit || defaultItem?.coverFit || 'cover',
+    coverScale: typeof item.coverScale === 'number' ? item.coverScale : (defaultItem?.coverScale ?? 1),
+    coverPositionX: typeof item.coverPositionX === 'number' ? item.coverPositionX : (defaultItem?.coverPositionX ?? 50),
+    coverPositionY: typeof item.coverPositionY === 'number' ? item.coverPositionY : (defaultItem?.coverPositionY ?? 50),
   };
 }
 
@@ -196,6 +200,10 @@ function mergeWithDefaultOrgExperience(item: any): ExperienceItem {
     regulatoryStandards,
     competencies,
     metrics,
+    coverFit: item.coverFit || defaultItem?.coverFit || 'cover',
+    coverScale: typeof item.coverScale === 'number' ? item.coverScale : (defaultItem?.coverScale ?? 1),
+    coverPositionX: typeof item.coverPositionX === 'number' ? item.coverPositionX : (defaultItem?.coverPositionX ?? 50),
+    coverPositionY: typeof item.coverPositionY === 'number' ? item.coverPositionY : (defaultItem?.coverPositionY ?? 50),
   };
 }
 
@@ -266,6 +274,10 @@ function mergeWithDefaultOtherExperience(item: any): ExperienceItem {
     regulatoryStandards,
     competencies,
     metrics,
+    coverFit: item.coverFit || defaultItem?.coverFit || 'cover',
+    coverScale: typeof item.coverScale === 'number' ? item.coverScale : (defaultItem?.coverScale ?? 1),
+    coverPositionX: typeof item.coverPositionX === 'number' ? item.coverPositionX : (defaultItem?.coverPositionX ?? 50),
+    coverPositionY: typeof item.coverPositionY === 'number' ? item.coverPositionY : (defaultItem?.coverPositionY ?? 50),
   };
 }
 
@@ -277,7 +289,14 @@ function sanitizeCertificate(cert: any): CertificateCardItem {
   if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.startsWith('/src/assets/')) {
     imageUrl = 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1200&auto=format&fit=crop';
   }
-  return { ...cert, imageUrl };
+  return { 
+    ...cert, 
+    imageUrl,
+    coverFit: cert.coverFit || 'cover',
+    coverScale: typeof cert.coverScale === 'number' ? cert.coverScale : 1,
+    coverPositionX: typeof cert.coverPositionX === 'number' ? cert.coverPositionX : 50,
+    coverPositionY: typeof cert.coverPositionY === 'number' ? cert.coverPositionY : 50,
+  };
 }
 
 function sanitizeProfilePhoto(photo: any): string {

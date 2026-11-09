@@ -25,6 +25,10 @@ export interface ExperienceItem {
   regulatoryStandards: string[];
   competencies: string[];
   metrics: { label: string; value: string }[];
+  coverFit?: 'cover' | 'contain';
+  coverScale?: number;
+  coverPositionX?: number;
+  coverPositionY?: number;
 }
 
 export interface EducationItem {
@@ -61,6 +65,10 @@ export interface CertificateCardItem {
   description?: string;
   imageUrl?: string;
   certificateUrl?: string; // Tautan URL eksternal ke sertifikat asli
+  coverFit?: 'cover' | 'contain';
+  coverScale?: number;
+  coverPositionX?: number;
+  coverPositionY?: number;
 }
 
 export interface PublicationItem {
