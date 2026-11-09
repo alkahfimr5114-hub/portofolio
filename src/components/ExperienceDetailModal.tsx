@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, MapPin, Building, CheckCircle2, 
   ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, Plus, 
-  Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud 
+  Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud,
+  Star, GripVertical 
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
 import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
@@ -179,11 +180,80 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
 
   // Delete photo (and sync card image thumbnail if first photo deleted)
   const handleDeletePhoto = (photoId: string) => {
+    if (!experience) return;
     const remainingPhotos = photos.filter((p) => p.id !== photoId);
     const updated: ExperienceItem = {
       ...experience,
       image: remainingPhotos.length > 0 ? (remainingPhotos[0].url || experience.image) : experience.image,
       galleryPhotos: remainingPhotos,
+    };
+    onUpdateExperience(updated);
+  };
+
+  // Move photo position (left / right)
+  const handleMovePhoto = (photoId: string, direction: 'prev' | 'next') => {
+    if (!experience) return;
+    const currentIdx = photos.findIndex((p) => p.id === photoId);
+    if (currentIdx === -1) return;
+    const targetIdx = direction === 'prev' ? currentIdx - 1 : currentIdx + 1;
+    if (targetIdx < 0 || targetIdx >= photos.length) return;
+
+    const newPhotos = [...photos];
+    const [moved] = newPhotos.splice(currentIdx, 1);
+    newPhotos.splice(targetIdx, 0, moved);
+
+    const updated: ExperienceItem = {
+      ...experience,
+      // Automatic: when a photo moves to index 0, synchronize the front card thumbnail image
+      image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+      galleryPhotos: newPhotos,
+    };
+    onUpdateExperience(updated);
+  };
+
+  // Set specific photo as main cover (move to index 0 and update experience.image)
+  const handleSetAsCover = (photoId: string) => {
+    if (!experience) return;
+    const currentIdx = photos.findIndex((p) => p.id === photoId);
+    if (currentIdx <= 0) return; // already cover if 0
+
+    const newPhotos = [...photos];
+    const [selected] = newPhotos.splice(currentIdx, 1);
+    newPhotos.unshift(selected);
+
+    const updated: ExperienceItem = {
+      ...experience,
+      image: selected.url ? formatImageUrl(selected.url) : experience.image,
+      galleryPhotos: newPhotos,
+    };
+    onUpdateExperience(updated);
+  };
+
+  // Drag and drop photo reorder
+  const handleDragStartPhoto = (e: React.DragEvent, photoId: string) => {
+    e.dataTransfer.setData('text/plain', `photo:${photoId}`);
+  };
+
+  const handleDropPhoto = (e: React.DragEvent, targetPhotoId: string) => {
+    e.preventDefault();
+    if (!experience) return;
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('photo:')) return;
+    const draggedId = data.replace('photo:', '');
+    if (!draggedId || draggedId === targetPhotoId) return;
+
+    const fromIdx = photos.findIndex((p) => p.id === draggedId);
+    const toIdx = photos.findIndex((p) => p.id === targetPhotoId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const newPhotos = [...photos];
+    const [moved] = newPhotos.splice(fromIdx, 1);
+    newPhotos.splice(toIdx, 0, moved);
+
+    const updated: ExperienceItem = {
+      ...experience,
+      image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+      galleryPhotos: newPhotos,
     };
     onUpdateExperience(updated);
   };
@@ -458,22 +528,23 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           )}
         </div>
 
-        {/* E. Kotak "Galeri Dokumentasi Foto PKPA" (galleryPhotos) */}
+        {/* E. Kotak "Galeri Dokumentasi Foto" (galleryPhotos) */}
         <div className="p-6 rounded-2xl glass-futuristic-card border border-sky-500/30 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-            <div>
-              <h3 className="text-base sm:text-lg font-bold font-['Outfit'] text-white flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-sky-400" />
-                <span>Galeri Dokumentasi Foto PKPA</span>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
+                <ImageIcon className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span>Galeri Dokumentasi Foto</span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Foto dokumentasi aktivitas pelayanan kefarmasian, QC laboratorium, dan fasilitas instansi.
-              </p>
             </div>
 
-            {/* Controls upload foto (Admin Only) */}
+            {/* Controls upload foto (Admin Only) & Photo counter */}
             {isEditMode ? (
               <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 px-2.5 py-1 rounded-full">
+                  {photos.length} Foto
+                </span>
+
                 <span className="text-[11px] font-mono text-amber-300 bg-amber-950/60 border border-amber-600 px-2.5 py-1 rounded-full">
                   Admin Aktif
                 </span>
@@ -514,7 +585,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-slate-400 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+                <span className="text-[11px] font-mono text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 px-3 py-1 rounded-full">
                   {photos.length} Foto Dokumentasi
                 </span>
               </div>
@@ -562,13 +633,19 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
             </form>
           )}
 
-          {/* Grid Foto Dokumentasi dengan object-contain dan caption yang dapat diedit */}
+          {/* Grid Foto Dokumentasi dengan object-contain, reorder admin controls, dan caption yang dapat diedit */}
           {photos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               {photos.map((photo, pIdx) => (
                 <div
                   key={photo.id || pIdx}
-                  className="group relative rounded-2xl overflow-hidden border border-white/15 hover:border-sky-400/70 bg-gradient-to-b from-slate-900/90 to-black/95 p-3 flex flex-col justify-between transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,112,243,0.3)] cursor-pointer"
+                  draggable={isEditMode}
+                  onDragStart={(e) => handleDragStartPhoto(e, photo.id)}
+                  onDragOver={(e) => { if (isEditMode) e.preventDefault(); }}
+                  onDrop={(e) => { if (isEditMode) handleDropPhoto(e, photo.id); }}
+                  className={`group relative rounded-2xl overflow-hidden border border-white/15 hover:border-sky-400/70 bg-gradient-to-b from-slate-900/90 to-black/95 p-3 flex flex-col justify-between transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,112,243,0.3)] cursor-pointer ${
+                    isEditMode ? 'hover:border-amber-400/80' : ''
+                  }`}
                   onClick={() => setActivePhotoIndex(pIdx)}
                 >
                   {/* Image Frame */}
@@ -586,25 +663,97 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                       referrerPolicy="no-referrer"
                     />
                     
-                    {/* Hover indicator */}
-                    <div className="absolute inset-0 bg-sky-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <span className="pill-badge text-[10px] bg-black/85 text-sky-300 border border-sky-400/40 px-2.5 py-1">
-                        Klik untuk Perbesar
-                      </span>
-                    </div>
+                    {/* Hover indicator (in view mode) */}
+                    {!isEditMode && (
+                      <div className="absolute inset-0 bg-sky-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span className="pill-badge text-[10px] bg-black/85 text-sky-300 border border-sky-400/40 px-2.5 py-1">
+                          Klik untuk Perbesar
+                        </span>
+                      </div>
+                    )}
 
-                    {/* Delete button (Admin Only) */}
+                    {/* View Mode cover indicator if index === 0 */}
+                    {!isEditMode && pIdx === 0 && (
+                      <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                        <span className="text-[10px] font-mono font-bold bg-black/80 text-amber-300 border border-amber-400/50 px-2 py-0.5 rounded-full shadow flex items-center gap-1 backdrop-blur-md">
+                          <Star className="w-2.5 h-2.5 fill-amber-300 text-amber-300" />
+                          <span>Sampul Utama</span>
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Admin reorder & controls (Top bar) */}
                     {isEditMode && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePhoto(photo.id);
-                        }}
-                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-950/90 border border-red-500 text-red-200 hover:bg-red-900 hover:text-white transition-colors z-20 shadow-lg cursor-pointer"
-                        title="Hapus foto ini"
+                      <div 
+                        className="absolute top-2 left-2 right-2 z-20 flex items-center justify-between gap-1 pointer-events-auto"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        {/* Number & Cover indicator */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-mono font-bold text-amber-300 bg-slate-950/95 border border-amber-400/80 px-2 py-0.5 rounded-full shadow-lg select-none">
+                            #{pIdx + 1}
+                          </span>
+                          {pIdx === 0 ? (
+                            <span className="text-[10px] font-mono font-bold bg-amber-500 text-black px-2 py-0.5 rounded-full shadow flex items-center gap-1 select-none">
+                              <Star className="w-2.5 h-2.5 fill-black" />
+                              <span>Sampul</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSetAsCover(photo.id)}
+                              className="text-[10px] font-mono font-semibold bg-slate-950/90 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-400/60 px-2 py-0.5 rounded-full shadow transition-all cursor-pointer flex items-center gap-1"
+                              title="Pindahkan foto ini ke urutan pertama sebagai Sampul Utama kartu"
+                            >
+                              <Star className="w-2.5 h-2.5" />
+                              <span className="hidden sm:inline">Jadikan Sampul</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Controls: Grip, Left, Right, Delete */}
+                        <div className="flex items-center gap-1 p-1 rounded-full bg-slate-950/95 border border-amber-400/80 shadow-2xl backdrop-blur-md">
+                          <div 
+                            className="p-1 text-amber-400/80 hover:text-amber-300 cursor-grab active:cursor-grabbing"
+                            title="Tarik untuk geser urutan foto"
+                          >
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleMovePhoto(photo.id, 'prev')}
+                            disabled={pIdx === 0}
+                            className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:hover:bg-transparent transition-all cursor-pointer"
+                            title="Geser ke Kiri / Sebelumnya"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleMovePhoto(photo.id, 'next')}
+                            disabled={pIdx === photos.length - 1}
+                            className="p-1 rounded-full text-slate-200 hover:text-white hover:bg-slate-800 disabled:opacity-25 disabled:hover:bg-transparent transition-all cursor-pointer"
+                            title="Geser ke Kanan / Selanjutnya"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('Hapus foto dokumentasi ini?')) {
+                                handleDeletePhoto(photo.id);
+                              }
+                            }}
+                            className="p-1 rounded-full bg-red-600 hover:bg-red-500 text-white transition-all cursor-pointer shadow-md hover:scale-105"
+                            title="Hapus foto ini"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -628,7 +777,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
                       </div>
                     ) : (
                       <p className="text-xs font-mono text-slate-200 line-clamp-2 leading-relaxed">
-                        {photo.caption || 'Dokumentasi Praktik Kefarmasian'}
+                        {photo.caption || 'Dokumentasi Kegiatan'}
                       </p>
                     )}
                   </div>
@@ -638,7 +787,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
           ) : (
             <div className="p-8 text-center text-xs font-mono text-slate-400 border border-dashed border-slate-700 rounded-xl">
               {isEditMode
-                ? "Belum ada foto dokumentasi. Gunakan tombol 'Unggah Foto' atau 'Input URL' di atas untuk menambahkan dokumentasi kegiatan PKPA."
+                ? "Belum ada foto dokumentasi. Gunakan tombol 'Unggah Foto' atau 'Input URL' di atas untuk menambahkan dokumentasi kegiatan."
                 : "Belum ada foto dokumentasi untuk kegiatan ini."}
             </div>
           )}
