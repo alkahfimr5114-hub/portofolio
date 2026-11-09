@@ -4,6 +4,7 @@ export interface GalleryPhoto {
   id: string;
   url: string;
   caption: string;
+  fileType?: 'image' | 'pdf';
 }
 
 export interface ExperienceItem {
@@ -29,6 +30,7 @@ export interface ExperienceItem {
   coverScale?: number;
   coverPositionX?: number;
   coverPositionY?: number;
+  fileType?: 'image' | 'pdf';
 }
 
 export interface EducationItem {
@@ -69,6 +71,7 @@ export interface CertificateCardItem {
   coverScale?: number;
   coverPositionX?: number;
   coverPositionY?: number;
+  fileType?: 'image' | 'pdf';
 }
 
 export interface PublicationItem {

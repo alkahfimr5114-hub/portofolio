@@ -3,10 +3,17 @@ import {
   X, Calendar, MapPin, Building, CheckCircle2, 
   ChevronLeft, ChevronRight, ArrowLeft, Image as ImageIcon, Plus, 
   Trash2, Upload, ExternalLink, Cpu, Loader2, Cloud,
-  Star, GripVertical, Sliders, RotateCcw 
+  Star, GripVertical, Sliders, RotateCcw, FileText, Download
 } from 'lucide-react';
 import { ExperienceItem, GalleryPhoto } from '../types/pharmacy';
-import { uploadImageToSupabaseStorage, compressImageWithCanvas, formatImageUrl } from '../lib/supabase';
+import { 
+  uploadFileToSupabaseStorage, 
+  uploadImageToSupabaseStorage, 
+  compressImageWithCanvas, 
+  formatImageUrl,
+  formatMediaUrl,
+  isPdfUrl 
+} from '../lib/supabase';
 
 interface ExperienceDetailModalProps {
   experience: ExperienceItem | null;
@@ -26,6 +33,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   onUpdateExperience,
 }) => {
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
+  const [activePdfModal, setActivePdfModal] = useState<{ url: string; title: string } | null>(null);
   const [newPhotoUrl, setNewPhotoUrl] = useState('');
   const [newPhotoCaption, setNewPhotoCaption] = useState('');
   const [showAddPhotoForm, setShowAddPhotoForm] = useState(false);
@@ -37,6 +45,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   // Reset activePhotoIndex whenever experience changes to avoid out-of-bounds error
   useEffect(() => {
     setActivePhotoIndex(null);
+    setActivePdfModal(null);
     setShowAddPhotoForm(false);
     setNewPhotoUrl('');
     setNewPhotoCaption('');
@@ -49,7 +58,9 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (activePhotoIndex !== null) {
+        if (activePdfModal !== null) {
+          setActivePdfModal(null);
+        } else if (activePhotoIndex !== null) {
           setActivePhotoIndex(null);
         } else {
           onClose();
@@ -64,7 +75,7 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
       document.body.style.overflow = 'auto';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [experience, onClose, activePhotoIndex]);
+  }, [experience, onClose, activePhotoIndex, activePdfModal]);
 
   if (!experience) return null;
 
@@ -84,23 +95,27 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
   const prevExperience = currentIndex > 0 ? allExperiences[currentIndex - 1] : null;
   const nextExperience = currentIndex >= 0 && currentIndex < allExperiences.length - 1 ? allExperiences[currentIndex + 1] : null;
 
-  // Add photo via URL (auto-formats Google Drive links & auto-syncs card thumbnail)
+  // Add photo / PDF via URL (auto-formats Google Drive links & auto-syncs card thumbnail)
   const handleAddPhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPhotoUrl.trim()) return;
 
-    const formattedUrl = formatImageUrl(newPhotoUrl.trim());
+    const rawUrl = newPhotoUrl.trim();
+    const isPdf = isPdfUrl(rawUrl);
+    const formattedUrl = formatMediaUrl(rawUrl, isPdf ? 'pdf' : 'image');
     const newPhoto: GalleryPhoto = {
-      id: `photo-${Date.now()}`,
+      id: `doc-${Date.now()}`,
       url: formattedUrl,
-      caption: newPhotoCaption.trim() || 'Dokumentasi Praktik Kefarmasian',
+      caption: newPhotoCaption.trim() || (isPdf ? 'Dokumen PDF Praktik Kefarmasian' : 'Dokumentasi Praktik Kefarmasian'),
+      fileType: isPdf ? 'pdf' : 'image',
     };
 
     const newPhotos = [...photos, newPhoto];
     const updated: ExperienceItem = {
       ...experience,
-      // First photo in galleryPhotos automatically updates card image thumbnail
-      image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+      // First item in galleryPhotos automatically updates card image thumbnail
+      image: newPhotos[0]?.url ? formatMediaUrl(newPhotos[0].url, newPhotos[0].fileType) : experience.image,
+      fileType: newPhotos[0]?.fileType || experience.fileType,
       galleryPhotos: newPhotos,
     };
 
@@ -110,67 +125,79 @@ export const ExperienceDetailModal: React.FC<ExperienceDetailModalProps> = ({
     setShowAddPhotoForm(false);
   };
 
-  // Upload photo file: tries Supabase Storage first, then Canvas compression dataURL (<150KB)
+  // Upload file (Image or PDF): tries Supabase Storage first, then Canvas compression / Base64 DataURL (up to 5MB)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     setIsUploading(true);
-    setUploadStatus('Mengunggah foto...');
+    setUploadStatus(isPdf ? 'Mengunggah dokumen PDF...' : 'Mengunggah foto...');
 
     try {
-      // 1. Try Supabase Storage upload
-      const result = await uploadImageToSupabaseStorage(file, 'pkpa');
-      let finalUrl = result.url ? formatImageUrl(result.url) : '';
+      const result = await uploadFileToSupabaseStorage(file, 'pkpa');
+      let finalUrl = result.url ? formatMediaUrl(result.url, isPdf ? 'pdf' : 'image') : '';
 
-      // 2. If storage returned empty, guarantee compressed Base64 DataURL via Canvas
-      if (!finalUrl) {
+      // If image and returned empty, guarantee compressed Base64 DataURL via Canvas
+      if (!finalUrl && !isPdf) {
         finalUrl = await compressImageWithCanvas(file, 900, 0.75);
       }
 
       if (finalUrl) {
         const newPhoto: GalleryPhoto = {
-          id: `photo-${Date.now()}`,
+          id: `doc-${Date.now()}`,
           url: finalUrl,
           caption: file.name.replace(/\.[^/.]+$/, ''),
+          fileType: isPdf ? 'pdf' : 'image',
         };
         const newPhotos = [...photos, newPhoto];
         const updated: ExperienceItem = {
           ...experience,
-          // First photo in galleryPhotos automatically updates card image thumbnail
-          image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+          image: newPhotos[0]?.url ? formatMediaUrl(newPhotos[0].url, newPhotos[0].fileType) : experience.image,
+          fileType: newPhotos[0]?.fileType || experience.fileType,
           galleryPhotos: newPhotos,
         };
         onUpdateExperience(updated);
-        setUploadStatus(result.isCloud ? 'Tersimpan di Cloud Storage!' : 'Foto berhasil diunggah!');
+        setUploadStatus(
+          result.isCloud 
+            ? (isPdf ? 'Dokumen PDF tersimpan di Cloud Storage!' : 'Tersimpan di Cloud Storage!') 
+            : (isPdf ? 'Dokumen PDF berhasil disimpan!' : 'Foto berhasil diunggah!')
+        );
         setTimeout(() => setUploadStatus(null), 3500);
       } else {
-        setUploadStatus('Gagal memproses gambar.');
-        setTimeout(() => setUploadStatus(null), 3500);
+        setUploadStatus(result.error || (isPdf ? 'Gagal memproses file PDF.' : 'Gagal memproses gambar.'));
+        setTimeout(() => setUploadStatus(null), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('File upload error:', err);
-      // Fallback: direct canvas compression
-      try {
-        const fallbackUrl = await compressImageWithCanvas(file, 900, 0.75);
-        if (fallbackUrl) {
-          const newPhoto: GalleryPhoto = {
-            id: `photo-${Date.now()}`,
-            url: fallbackUrl,
-            caption: file.name.replace(/\.[^/.]+$/, ''),
-          };
-          const newPhotos = [...photos, newPhoto];
-          onUpdateExperience({
-            ...experience,
-            image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
-            galleryPhotos: newPhotos,
-          });
-          setUploadStatus('Foto berhasil disimpan!');
+      // Fallback for image
+      if (!isPdf) {
+        try {
+          const fallbackUrl = await compressImageWithCanvas(file, 900, 0.75);
+          if (fallbackUrl) {
+            const newPhoto: GalleryPhoto = {
+              id: `photo-${Date.now()}`,
+              url: fallbackUrl,
+              caption: file.name.replace(/\.[^/.]+$/, ''),
+              fileType: 'image',
+            };
+            const newPhotos = [...photos, newPhoto];
+            onUpdateExperience({
+              ...experience,
+              image: newPhotos[0]?.url ? formatImageUrl(newPhotos[0].url) : experience.image,
+              fileType: 'image',
+              galleryPhotos: newPhotos,
+            });
+            setUploadStatus('Foto berhasil disimpan!');
+            setTimeout(() => setUploadStatus(null), 3500);
+          }
+        } catch {
+          setUploadStatus('Terjadi kesalahan saat unggah.');
           setTimeout(() => setUploadStatus(null), 3500);
         }
-      } catch (fallbackErr) {
-        setUploadStatus('Terjadi kesalahan saat unggah.');
-        setTimeout(() => setUploadStatus(null), 3500);
+      } else {
+        setUploadStatus('Gagal mengunggah PDF: ' + (err?.message || 'Format tidak didukung'));
+        setTimeout(() => setUploadStatus(null), 4000);
       }
     } finally {
       setIsUploading(false);

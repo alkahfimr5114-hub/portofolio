@@ -202,31 +202,75 @@ export const BUCKET_NAME = 'portfolio-images';
 export interface StorageUploadResult {
   url: string;
   isCloud: boolean;
+  fileType?: 'image' | 'pdf';
   error?: string;
 }
 
 /**
- * Automatically converts Google Drive share links to high-resolution direct image URLs
- * that bypass browser CORS restrictions (https://lh3.googleusercontent.com/d/ID=w1000).
+ * Detects whether a URL or Data URI represents a PDF file.
  */
-export function formatImageUrl(url: string): string {
+export function isPdfUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.startsWith('data:application/pdf')) return true;
+  if (trimmed.includes('mime=application/pdf') || trimmed.includes('content-type=application/pdf')) return true;
+  if (trimmed.includes('drive.google.com') && (trimmed.includes('/preview') || trimmed.includes('export=download&id='))) {
+    if (trimmed.includes('pdf')) return true;
+  }
+  const pathPart = trimmed.split('?')[0].split('#')[0];
+  if (pathPart.endsWith('.pdf')) return true;
+  return false;
+}
+
+/**
+ * Automatically converts Google Drive share links to direct embeddable URLs:
+ * - PDFs: https://drive.google.com/file/d/ID/preview
+ * - Images: https://lh3.googleusercontent.com/d/ID=w1000
+ */
+export function formatMediaUrl(url: string, type?: 'image' | 'pdf'): string {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // Google Drive file link: /file/d/ID/view or /file/d/ID
+  const isPdf = type === 'pdf' || (type === undefined && isPdfUrl(trimmed));
+
+  // Google Drive file link: /file/d/ID/view or /file/d/ID/preview or /file/d/ID
   const driveFileMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i);
   if (driveFileMatch && driveFileMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/${driveFileMatch[1]}=w1000`;
+    const fileId = driveFileMatch[1];
+    if (isPdf) {
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+    return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
   }
 
   // Google Drive url parameter: /open?id=ID or /uc?id=ID or &id=ID
   const driveIdMatch = trimmed.match(/drive\.google\.com\/(?:open|uc)\?(?:[^&]*&)*id=([a-zA-Z0-9_-]+)/i);
   if (driveIdMatch && driveIdMatch[1]) {
-    return `https://lh3.googleusercontent.com/d/${driveIdMatch[1]}=w1000`;
+    const fileId = driveIdMatch[1];
+    if (isPdf) {
+      return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+    return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
   }
 
   return trimmed;
+}
+
+export function formatImageUrl(url: string): string {
+  return formatMediaUrl(url);
+}
+
+/**
+ * Helper to convert any File to Base64 DataURL (for PDFs and fallback storage).
+ */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string) || '');
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
@@ -283,21 +327,79 @@ export function compressImageWithCanvas(
 }
 
 /**
- * Upload an image file to Supabase Storage bucket 'portfolio-images'.
- * 1. Client-side Canvas compression (max 900px, image/jpeg, 0.75 quality, <150KB).
- * 2. Uploads compressed blob to Supabase Storage bucket 'portfolio-images'.
- * 3. If storage upload succeeds, returns publicUrl.
- * 4. If storage bucket fails or restricted, returns compressed Canvas data URL,
- *    ensuring 100% permanent persistence in Supabase portfolio_settings JSONB.
+ * Upload an image or PDF file to Supabase Storage bucket 'portfolio-images'
+ * with automatic fallback to JSONB (Canvas compressed image or Base64 PDF DataURL up to 5MB).
  */
-export async function uploadImageToSupabaseStorage(
+export async function uploadFileToSupabaseStorage(
   file: File,
   folder: string = 'general'
 ): Promise<StorageUploadResult> {
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9.]/g, '_');
+
+  // A. PDF HANDLING
+  if (isPdf) {
+    const filePath = `${folder}/${Date.now()}-${cleanName}.pdf`;
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: 'application/pdf',
+          });
+
+        if (!error && data?.path) {
+          const publicUrl = supabase.storage
+            .from(BUCKET_NAME)
+            .getPublicUrl(filePath).data.publicUrl;
+
+          if (publicUrl) {
+            return {
+              url: formatMediaUrl(publicUrl, 'pdf'),
+              isCloud: true,
+              fileType: 'pdf',
+            };
+          }
+        } else if (error) {
+          console.warn('[Supabase Storage PDF] Notice:', error.message);
+        }
+      } catch (err: any) {
+        console.warn('[Supabase Storage PDF] Exception:', err);
+      }
+    }
+
+    // Fallback: Base64 PDF DataURL up to 5MB for permanent JSONB storage in portfolio_settings
+    try {
+      if (file.size > 5.5 * 1024 * 1024) {
+        return {
+          url: '',
+          isCloud: false,
+          fileType: 'pdf',
+          error: 'Ukuran file PDF melebihi 5MB. Silakan gunakan link Google Drive atau perkecil dokumen PDF.',
+        };
+      }
+      const dataUrl = await fileToDataUrl(file);
+      return {
+        url: dataUrl,
+        isCloud: false,
+        fileType: 'pdf',
+      };
+    } catch (e: any) {
+      return {
+        url: '',
+        isCloud: false,
+        fileType: 'pdf',
+        error: 'Gagal memproses file PDF: ' + (e?.message || ''),
+      };
+    }
+  }
+
+  // B. IMAGE HANDLING
   const filePath = `${folder}/${Date.now()}-${cleanName}.jpg`;
 
-  // a. Client-side compression
   let compressedDataUrl = '';
   try {
     compressedDataUrl = await compressImageWithCanvas(file, 900, 0.75);
@@ -322,7 +424,6 @@ export async function uploadImageToSupabaseStorage(
     }
   }
 
-  // b. Try Supabase Storage upload
   if (supabase) {
     try {
       const uploadTarget = blobToUpload || file;
@@ -343,6 +444,7 @@ export async function uploadImageToSupabaseStorage(
           return {
             url: formatImageUrl(publicUrl),
             isCloud: true,
+            fileType: 'image',
           };
         }
       } else if (error) {
@@ -353,10 +455,15 @@ export async function uploadImageToSupabaseStorage(
     }
   }
 
-  // c. Return lightweight Canvas dataUrl (<150KB) for permanent JSONB database storage
   return {
     url: compressedDataUrl || '',
     isCloud: false,
+    fileType: 'image',
     error: 'Disimpan via kompresi database portfolio_settings (Storage bucket belum aktif).',
   };
 }
+
+/**
+ * Backward compatibility alias for uploadFileToSupabaseStorage
+ */
+export const uploadImageToSupabaseStorage = uploadFileToSupabaseStorage;
